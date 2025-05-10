@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { DayOffRequest, Holiday, DayOffStatus } from "@/types";
@@ -15,25 +14,27 @@ interface DataContextType {
 
 export const DataContext = createContext<DataContextType | undefined>(undefined);
 
-const MOCK_HOLIDAYS: Holiday[] = [
-  { id: "holiday_1", name: "New Year's Day", date: new Date(new Date().getFullYear(), 0, 1) },
-  { id: "holiday_2", name: "Independence Day", date: new Date(new Date().getFullYear(), 6, 4) },
-  { id: "holiday_3", name: "Christmas Day", date: new Date(new Date().getFullYear(), 11, 25) },
-];
-
 export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [requests, setRequests] = useState<DayOffRequest[]>([]);
-  const [holidays, setHolidays] = useState<Holiday[]>(MOCK_HOLIDAYS);
+  const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading initial data
-    const initialRequests: DayOffRequest[] = [
+    // Initialize mock data on the client side to avoid hydration mismatches
+    const currentYear = new Date().getFullYear();
+    const MOCK_HOLIDAYS_DATA: Holiday[] = [
+      { id: "holiday_1", name: "New Year's Day", date: new Date(currentYear, 0, 1) },
+      { id: "holiday_2", name: "Independence Day", date: new Date(currentYear, 6, 4) },
+      { id: "holiday_3", name: "Christmas Day", date: new Date(currentYear, 11, 25) },
+    ];
+
+    const today = new Date();
+    const INITIAL_REQUESTS_DATA: DayOffRequest[] = [
       {
         id: "req_1",
         userId: "user_123", // Assuming MOCK_USER.id
-        startDate: new Date(new Date().setDate(new Date().getDate() + 10)),
-        endDate: new Date(new Date().setDate(new Date().getDate() + 11)),
+        startDate: new Date(new Date(today).setDate(today.getDate() + 10)),
+        endDate: new Date(new Date(today).setDate(today.getDate() + 11)),
         reason: "Vacation",
         status: "approved",
         createdAt: new Date(),
@@ -41,14 +42,16 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       {
         id: "req_2",
         userId: "user_123",
-        startDate: new Date(new Date().setDate(new Date().getDate() - 5)),
-        endDate: new Date(new Date().setDate(new Date().getDate() - 5)),
+        startDate: new Date(new Date(today).setDate(today.getDate() - 5)),
+        endDate: new Date(new Date(today).setDate(today.getDate() - 5)),
         reason: "Personal day",
         status: "pending",
-        createdAt: new Date(new Date().setDate(new Date().getDate() - 7)),
+        createdAt: new Date(new Date(today).setDate(today.getDate() - 7)),
       },
     ];
-    setRequests(initialRequests);
+
+    setHolidays(MOCK_HOLIDAYS_DATA);
+    setRequests(INITIAL_REQUESTS_DATA);
     setIsLoading(false);
   }, []);
 
@@ -81,3 +84,4 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     </DataContext.Provider>
   );
 };
+

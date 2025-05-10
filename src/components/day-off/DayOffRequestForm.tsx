@@ -19,15 +19,13 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { CalendarIcon, Send, Sparkles, AlertTriangle } from "lucide-react";
+import { CalendarIcon, Send } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useData } from "@/hooks/useData";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import React, { useState, useTransition } from "react";
-import { getAIRejectionSuggestions } from "@/app/submit-request/actions";
+import React, { useTransition } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const 이유_최소_길이 = 10;
 const 이유_최대_길이 = 500;
@@ -55,8 +53,6 @@ export function DayOffRequestForm() {
   const { toast } = useToast();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
-  const [isAISuggestionLoading, setIsAISuggestionLoading] = useState(false);
 
   const form = useForm<DayOffRequestFormValues>({
     resolver: zodResolver(dayOffRequestFormSchema),
@@ -64,36 +60,6 @@ export function DayOffRequestForm() {
       reason: "",
     },
   });
-
-  const handleGetAISuggestions = async () => {
-    const reason = form.getValues("reason");
-    if (reason.length < 이유_최소_길이) {
-      toast({
-        title: "Reason too short",
-        description: `Please provide a reason with at least ${이유_최소_길이} characters to get AI suggestions.`,
-        variant: "destructive",
-      });
-      return;
-    }
-    setIsAISuggestionLoading(true);
-    setAiSuggestions([]);
-    startTransition(async () => {
-      const result = await getAIRejectionSuggestions({ description: reason });
-      if (result.success && result.suggestions) {
-        setAiSuggestions(result.suggestions);
-        if (result.suggestions.length === 0) {
-          toast({ title: "AI Analysis Complete", description: "No specific rejection concerns found by AI."});
-        }
-      } else {
-        toast({
-          title: "AI Suggestion Error",
-          description: result.error || "Could not fetch AI suggestions.",
-          variant: "destructive",
-        });
-      }
-      setIsAISuggestionLoading(false);
-    });
-  };
 
   function onSubmit(data: DayOffRequestFormValues) {
     if (!user) {
@@ -103,13 +69,13 @@ export function DayOffRequestForm() {
 
     startTransition(() => {
       try {
-        const newRequest = addRequest({ ...data, userId: user.id, aiSuggestions });
+        // Pass data without aiSuggestions
+        const newRequest = addRequest({ ...data, userId: user.id });
         toast({
           title: "Request Submitted!",
           description: `Your day-off request from ${format(data.startDate, "PPP")} to ${format(data.endDate, "PPP")} has been submitted.`,
         });
         form.reset();
-        setAiSuggestions([]);
         router.push("/"); // Redirect to the list of requests
       } catch (error) {
         toast({ title: "Submission Failed", description: "Could not submit your request. Please try again.", variant: "destructive"});
@@ -220,44 +186,14 @@ export function DayOffRequestForm() {
                     />
                   </FormControl>
                   <FormDescription>
-                    Your reason will be analyzed by AI for potential rejection flags.
+                    Please provide a clear and concise reason for your absence.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <Button type="button" variant="outline" onClick={handleGetAISuggestions} disabled={isAISuggestionLoading || isPending} className="w-full md:w-auto">
-              {isAISuggestionLoading ? (
-                <Sparkles className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Sparkles className="mr-2 h-4 w-4" />
-              )}
-              Get AI Rejection Suggestions
-            </Button>
-
-            {aiSuggestions.length > 0 && (
-              <Alert variant="default" className="bg-blue-50 border-blue-200">
-                 <Sparkles className="h-4 w-4 !text-blue-600" />
-                <AlertTitle className="text-blue-700">AI Suggestions</AlertTitle>
-                <AlertDescription className="text-blue-600">
-                  Based on your reason, here are some potential concerns an AI identified (these are suggestions and may not apply):
-                  <ul className="list-disc list-inside mt-2 text-sm">
-                    {aiSuggestions.map((suggestion, index) => (
-                      <li key={index}>{suggestion}</li>
-                    ))}
-                  </ul>
-                </AlertDescription>
-              </Alert>
-            )}
-             {isAISuggestionLoading && (
-                <div className="flex items-center text-sm text-muted-foreground">
-                    <Sparkles className="mr-2 h-4 w-4 animate-pulse" />
-                    AI is analyzing your reason...
-                </div>
-            )}
-
-            <Button type="submit" disabled={isPending || isAISuggestionLoading} className="w-full md:w-auto">
+            <Button type="submit" disabled={isPending} className="w-full md:w-auto">
               <Send className="mr-2 h-4 w-4" />
               {isPending ? "Submitting..." : "Submit Request"}
             </Button>
@@ -267,3 +203,4 @@ export function DayOffRequestForm() {
     </Card>
   );
 }
+

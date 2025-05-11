@@ -1,6 +1,7 @@
+
 "use client";
 
-import type { DayOffRequest, Holiday, DayOffStatus } from "@/types";
+import type { DayOffRequest, Holiday, DayOffStatus, User } from "@/types";
 import React, { createContext, useState, ReactNode, useEffect } from "react";
 
 interface DataContextType {
@@ -10,9 +11,18 @@ interface DataContextType {
   addRequest: (request: Omit<DayOffRequest, "id" | "createdAt" | "userId" > & { userId: string }) => DayOffRequest;
   updateRequestStatus: (requestId: string, status: DayOffStatus) => void;
   getRequestsByUserId: (userId: string) => DayOffRequest[];
+  getAllRequests: () => DayOffRequest[]; // New function for admin
 }
 
 export const DataContext = createContext<DataContextType | undefined>(undefined);
+
+const MOCK_USER_TWO: User = {
+  id: "user_456",
+  name: "Jane Colleague",
+  email: "jane.colleague@example.com",
+  role: "user",
+};
+
 
 export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [requests, setRequests] = useState<DayOffRequest[]>([]);
@@ -32,21 +42,39 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const INITIAL_REQUESTS_DATA: DayOffRequest[] = [
       {
         id: "req_1",
-        userId: "user_123", // Assuming MOCK_USER.id
+        userId: "user_123", // Demo Employee
         startDate: new Date(new Date(today).setDate(today.getDate() + 10)),
         endDate: new Date(new Date(today).setDate(today.getDate() + 11)),
-        reason: "Vacation",
+        reason: "Vacation for Demo Employee",
         status: "approved",
-        createdAt: new Date(),
+        createdAt: new Date(new Date(today).setDate(today.getDate() - 2)),
       },
       {
         id: "req_2",
-        userId: "user_123",
+        userId: "user_123", // Demo Employee
         startDate: new Date(new Date(today).setDate(today.getDate() - 5)),
         endDate: new Date(new Date(today).setDate(today.getDate() - 5)),
-        reason: "Personal day",
+        reason: "Personal day for Demo Employee",
         status: "pending",
         createdAt: new Date(new Date(today).setDate(today.getDate() - 7)),
+      },
+      {
+        id: "req_3",
+        userId: MOCK_USER_TWO.id, // Jane Colleague
+        startDate: new Date(new Date(today).setDate(today.getDate() + 15)),
+        endDate: new Date(new Date(today).setDate(today.getDate() + 17)),
+        reason: "Conference trip for Jane",
+        status: "pending",
+        createdAt: new Date(new Date(today).setDate(today.getDate() - 1)),
+      },
+      {
+        id: "req_4",
+        userId: MOCK_USER_TWO.id, // Jane Colleague
+        startDate: new Date(new Date(today).setDate(today.getDate() + 2)),
+        endDate: new Date(new Date(today).setDate(today.getDate() + 3)),
+        reason: "Medical appointment for Jane",
+        status: "approved",
+        createdAt: new Date(new Date(today).setDate(today.getDate() - 3)),
       },
     ];
 
@@ -76,12 +104,15 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
   const getRequestsByUserId = (userId: string) => {
     return requests.filter(req => req.userId === userId).sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime());
-  }
+  };
+
+  const getAllRequests = () => {
+    return [...requests].sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime());
+  };
 
   return (
-    <DataContext.Provider value={{ requests, holidays, isLoading, addRequest, updateRequestStatus, getRequestsByUserId }}>
+    <DataContext.Provider value={{ requests, holidays, isLoading, addRequest, updateRequestStatus, getRequestsByUserId, getAllRequests }}>
       {children}
     </DataContext.Provider>
   );
 };
-

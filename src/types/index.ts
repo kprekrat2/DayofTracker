@@ -3,6 +3,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  role: "admin" | "user";
 }
 
 export type DayOffStatus = "pending" | "approved" | "rejected" | "cancelled";

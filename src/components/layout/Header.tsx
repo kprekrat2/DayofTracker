@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { Briefcase, LogOut, UserCircle } from "lucide-react";
+import { Briefcase, LogOut, UserCircle, ShieldCheck, User } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -19,7 +19,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { PanelLeft } from "lucide-react";
 
 export function Header() {
-  const { user, logout } = useAuth();
+  const { user, logout, loginAsAdmin, loginAsUser } = useAuth();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -29,9 +29,11 @@ export function Header() {
             <Briefcase className="h-7 w-7 text-primary" />
             <span className="text-xl font-bold">DayOff Tracker</span>
           </Link>
-          <div className="hidden md:flex">
-            <NavMenu orientation="horizontal"/>
-          </div>
+          {user && (
+            <div className="hidden md:flex">
+              <NavMenu orientation="horizontal"/>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-4">
@@ -52,6 +54,9 @@ export function Header() {
                     <p className="text-xs leading-none text-muted-foreground">
                       {user.email}
                     </p>
+                    <p className="text-xs leading-none text-muted-foreground capitalize pt-1">
+                      Role: {user.role}
+                    </p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -62,25 +67,32 @@ export function Header() {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Button variant="outline">
-              <UserCircle className="mr-2 h-4 w-4" /> Login
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={loginAsUser}>
+                <User className="mr-2 h-4 w-4" /> Login as User
+              </Button>
+              <Button variant="outline" onClick={loginAsAdmin}>
+                <ShieldCheck className="mr-2 h-4 w-4" /> Login as Admin
+              </Button>
+            </div>
           )}
-          <div className="md:hidden">
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="icon">
-                  <PanelLeft className="h-5 w-5" />
-                  <span className="sr-only">Toggle Menu</span>
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[300px] sm:w-[400px]">
-                <div className="p-4">
-                  <NavMenu orientation="vertical" />
-                </div>
-              </SheetContent>
-            </Sheet>
-          </div>
+          {user && (
+            <div className="md:hidden">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="icon">
+                    <PanelLeft className="h-5 w-5" />
+                    <span className="sr-only">Toggle Menu</span>
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+                  <div className="p-4">
+                    <NavMenu orientation="vertical" />
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
+          )}
         </div>
       </div>
     </header>

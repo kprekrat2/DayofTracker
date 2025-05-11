@@ -3,22 +3,38 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, PlusSquare, CalendarDays } from "lucide-react";
+import { Home, PlusSquare, CalendarDays, ClipboardCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 
-const navItems = [
-  { href: "/", label: "My Requests", icon: Home },
-  { href: "/submit-request", label: "Submit Request", icon: PlusSquare },
-  { href: "/calendar", label: "Calendar View", icon: CalendarDays },
+const baseNavItems = [
+  { href: "/", label: "My Requests", icon: Home, adminOnly: false },
+  { href: "/submit-request", label: "Submit Request", icon: PlusSquare, adminOnly: false },
+  { href: "/calendar", label: "Calendar View", icon: CalendarDays, adminOnly: false },
+];
+
+const adminNavItems = [
+  { href: "/admin/approvals", label: "Manage Approvals", icon: ClipboardCheck, adminOnly: true },
 ];
 
 export function NavMenu({ orientation = "vertical" }: { orientation?: "vertical" | "horizontal" }) {
   const pathname = usePathname();
+  const { user } = useAuth();
+
+  const allNavItems = user?.role === 'admin' ? [...baseNavItems, ...adminNavItems] : baseNavItems;
+  
+  const navItemsToDisplay = allNavItems.filter(item => {
+    if (item.adminOnly) {
+      return user?.role === 'admin';
+    }
+    return true;
+  });
+
 
   return (
     <nav className={cn("flex gap-2", orientation === "vertical" ? "flex-col" : "flex-row")}>
-      {navItems.map((item) => (
+      {navItemsToDisplay.map((item) => (
         <Button
           key={item.href}
           asChild

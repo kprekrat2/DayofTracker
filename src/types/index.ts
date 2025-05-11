@@ -11,6 +11,8 @@ export type DayOffStatus = "pending" | "approved" | "rejected" | "cancelled";
 export interface DayOffRequest {
   id: string;
   userId: string;
+  userName?: string; // Optional: for admin to see user's name easily
+  userEmail?: string; // Optional: for admin to see user's email easily
   startDate: Date;
   endDate: Date;
   reason: string;

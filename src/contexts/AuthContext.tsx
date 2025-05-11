@@ -2,7 +2,7 @@
 "use client";
 
 import type { User } from "@/types";
-import React, { createContext, useState, ReactNode } from "react";
+import React, { createContext, useState, ReactNode, useCallback } from "react";
 
 interface AuthContextType {
   user: User | null;
@@ -34,23 +34,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // isLoading is false as login is synchronous for mock users
   const [isLoading, setIsLoading] = useState(false);
 
-  const loginAsAdmin = () => {
+  const loginAsAdmin = useCallback(() => {
     setIsLoading(true);
     setUser(MOCK_ADMIN_USER);
     setIsLoading(false);
-  };
+  }, []);
 
-  const loginAsUser = () => {
+  const loginAsUser = useCallback(() => {
     setIsLoading(true);
     setUser(MOCK_REGULAR_USER);
     setIsLoading(false);
-  };
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setIsLoading(true);
     setUser(null);
     setIsLoading(false);
-  };
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, isLoading, loginAsAdmin, loginAsUser, logout }}>

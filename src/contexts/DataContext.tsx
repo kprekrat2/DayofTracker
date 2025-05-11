@@ -2,7 +2,7 @@
 "use client";
 
 import type { DayOffRequest, Holiday, DayOffStatus, User } from "@/types";
-import React, { createContext, useState, ReactNode, useEffect, useMemo } from "react";
+import React, { createContext, useState, ReactNode, useEffect, useMemo, useCallback } from "react";
 
 interface DataContextType {
   requests: DayOffRequest[];
@@ -116,7 +116,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(false);
   }, []);
 
-  const addRequest = (requestData: Omit<DayOffRequest, "id" | "createdAt" | "userId" | "userName" | "userEmail"> & { userId: string }) => {
+  const addRequest = useCallback((requestData: Omit<DayOffRequest, "id" | "createdAt" | "userId" | "userName" | "userEmail"> & { userId: string }) => {
     const requestingUser = usersById[requestData.userId];
     const newRequest: DayOffRequest = {
       ...requestData,
@@ -128,17 +128,17 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     };
     setRequests((prevRequests) => [newRequest, ...prevRequests]);
     return newRequest;
-  };
+  }, [usersById]);
 
-  const updateRequestStatus = (requestId: string, status: DayOffStatus) => {
+  const updateRequestStatus = useCallback((requestId: string, status: DayOffStatus) => {
     setRequests((prevRequests) =>
       prevRequests.map((req) =>
         req.id === requestId ? { ...req, status } : req
       )
     );
-  };
+  }, []);
 
-  const getRequestsByUserId = (userId: string) => {
+  const getRequestsByUserId = useCallback((userId: string) => {
     return requests
       .filter(req => req.userId === userId)
       .map(req => ({
@@ -147,9 +147,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         userEmail: usersById[req.userId]?.email,
       }))
       .sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime());
-  };
+  }, [requests, usersById]);
 
-  const getAllRequests = () => {
+  const getAllRequests = useCallback(() => {
     return requests
       .map(req => ({
         ...req,
@@ -157,7 +157,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         userEmail: usersById[req.userId]?.email,
       }))
       .sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime());
-  };
+  }, [requests, usersById]);
 
   return (
     <DataContext.Provider value={{ requests, holidays, isLoading, addRequest, updateRequestStatus, getRequestsByUserId, getAllRequests, users: ALL_MOCK_USERS }}>

@@ -72,7 +72,7 @@ export default function AdminHolidaysPage() {
     if (getYear(data.date) !== selectedYear) {
         toast({
             title: "Invalid Date",
-            description: `Holiday date must be within the year ${selectedYear}.`,
+            description: `Public holiday date must be within the year ${selectedYear}.`,
             variant: "destructive",
         });
         holidayForm.setValue("date", new Date(selectedYear, data.date.getMonth(), data.date.getDate()));
@@ -83,12 +83,12 @@ export default function AdminHolidaysPage() {
       try {
         addHoliday(data);
         toast({
-          title: "Holiday Added",
+          title: "Public Holiday Added",
           description: `${data.name} on ${format(data.date, "PPP")} has been added.`,
         });
         holidayForm.reset({ name: "", date: new Date(selectedYear, 0, 1) });
       } catch (error) {
-        toast({ title: "Failed to Add Holiday", description: "Could not add the holiday. Please try again.", variant: "destructive" });
+        toast({ title: "Failed to Add Public Holiday", description: "Could not add the public holiday. Please try again.", variant: "destructive" });
       }
     });
   };
@@ -98,12 +98,12 @@ export default function AdminHolidaysPage() {
       try {
         deleteHoliday(holidayId);
         toast({
-          title: "Holiday Deleted",
+          title: "Public Holiday Deleted",
           description: `${holidayName} has been deleted.`,
           variant: "destructive"
         });
       } catch (error) {
-        toast({ title: "Failed to Delete Holiday", description: "Could not delete the holiday. Please try again.", variant: "destructive" });
+        toast({ title: "Failed to Delete Public Holiday", description: "Could not delete the public holiday. Please try again.", variant: "destructive" });
       }
     });
   };
@@ -131,10 +131,10 @@ export default function AdminHolidaysPage() {
       <Card className="shadow-xl rounded-lg">
         <CardHeader>
           <CardTitle className="text-2xl flex items-center gap-2">
-            <VenetianMask className="h-7 w-7 text-primary" /> Manage Company Holidays
+            <VenetianMask className="h-7 w-7 text-primary" /> Manage Company Public Holidays
           </CardTitle>
           <CardDescription>
-            Define and manage company-wide holidays on a yearly basis.
+            Define and manage company-wide public holidays on a yearly basis.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-8">
@@ -153,7 +153,7 @@ export default function AdminHolidaysPage() {
 
           <Card className="shadow-md">
             <CardHeader>
-              <CardTitle className="text-xl">Add New Holiday for {selectedYear}</CardTitle>
+              <CardTitle className="text-xl">Add New Public Holiday for {selectedYear}</CardTitle>
             </CardHeader>
             <CardContent>
               <Form {...holidayForm}>
@@ -164,7 +164,7 @@ export default function AdminHolidaysPage() {
                       name="name"
                       render={({ field }) => (
                         <FormItem className="sm:col-span-2">
-                          <FormLabel>Holiday Name</FormLabel>
+                          <FormLabel>Public Holiday Name</FormLabel>
                           <FormControl>
                             <Input placeholder="e.g., Spring Festival" {...field} />
                           </FormControl>
@@ -177,7 +177,7 @@ export default function AdminHolidaysPage() {
                       name="date"
                       render={({ field }) => (
                         <FormItem className="flex flex-col">
-                          <FormLabel>Holiday Date</FormLabel>
+                          <FormLabel>Public Holiday Date</FormLabel>
                           <Popover>
                             <PopoverTrigger asChild>
                               <FormControl>
@@ -213,7 +213,7 @@ export default function AdminHolidaysPage() {
                   </div>
                   <Button type="submit" disabled={isPending}>
                     <PlusCircle className="mr-2 h-4 w-4" />
-                    {isPending ? "Adding..." : "Add Holiday"}
+                    {isPending ? "Adding..." : "Add Public Holiday"}
                   </Button>
                 </form>
               </Form>
@@ -222,20 +222,20 @@ export default function AdminHolidaysPage() {
           
           <Card className="shadow-md">
             <CardHeader>
-              <CardTitle className="text-xl">Holidays in {selectedYear}</CardTitle>
+              <CardTitle className="text-xl">Public Holidays in {selectedYear}</CardTitle>
             </CardHeader>
             <CardContent>
               {holidaysForYear.length === 0 ? (
                  <div className="text-center py-10">
                   <Image 
-                    src="https://picsum.photos/seed/no-holidays/300/200" 
-                    alt="No holidays defined" 
+                    src="https://picsum.photos/seed/no-public-holidays/300/200" 
+                    alt="No public holidays defined" 
                     width={250} 
                     height={160} 
                     className="mx-auto mb-4 rounded-lg shadow-sm"
                     data-ai-hint="empty calendar"
                   />
-                  <p className="text-muted-foreground">No holidays defined for {selectedYear}.</p>
+                  <p className="text-muted-foreground">No public holidays defined for {selectedYear}.</p>
                 </div>
               ) : (
                 <ul className="space-y-3">
@@ -266,3 +266,4 @@ export default function AdminHolidaysPage() {
     </div>
   );
 }
+

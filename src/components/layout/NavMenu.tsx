@@ -16,7 +16,7 @@ const baseNavItems = [
 
 const adminNavItems = [
   { href: "/admin/approvals", label: "Manage Approvals", icon: ClipboardCheck, adminOnly: true },
-  { href: "/admin/holidays", label: "Manage Holidays", icon: VenetianMask, adminOnly: true },
+  { href: "/admin/holidays", label: "Manage public holidays", icon: VenetianMask, adminOnly: true },
   { href: "/admin/users", label: "Manage Users", icon: Users, adminOnly: true },
 ];
 
@@ -52,3 +52,4 @@ export function NavMenu({ orientation = "vertical" }: { orientation?: "vertical"
     </nav>
   );
 }
+

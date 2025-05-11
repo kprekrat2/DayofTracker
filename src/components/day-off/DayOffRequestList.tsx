@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { DayOffRequest } from "@/types";
@@ -53,9 +52,10 @@ export function DayOffRequestList() {
 
   return (
     <div className="space-y-6">
-      {requestsToDisplay.map((request) => (
+      {requestsToDisplay.filter(Boolean).map((request) => (
         <DayOffRequestItem key={request.id} request={request} />
       ))}
     </div>
   );
 }
+

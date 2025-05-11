@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useMemo, useState, useTransition } from "react";
@@ -239,7 +238,7 @@ export default function AdminHolidaysPage() {
                 </div>
               ) : (
                 <ul className="space-y-3">
-                  {holidaysForYear.map((holiday) => (
+                  {holidaysForYear.filter(Boolean).map((holiday) => (
                     <li key={holiday.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
                       <div>
                         <p className="font-semibold">{holiday.name}</p>

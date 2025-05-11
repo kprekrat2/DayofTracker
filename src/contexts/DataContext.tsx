@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { DayOffRequest, Holiday, DayOffStatus, User } from "@/types";
@@ -8,7 +7,7 @@ interface DataContextType {
   requests: DayOffRequest[];
   holidays: Holiday[];
   isLoading: boolean;
-  addRequest: (request: Omit<DayOffRequest, "id" | "createdAt" | "userId" | "userName" | "userEmail" > & { userId: string; requestType: "vacation" | "additional" }) => DayOffRequest;
+  addRequest: (request: Omit<DayOffRequest, "id" | "createdAt" | "userId" | "userName" | "userEmail" | "status" | "aiSuggestions" > & { userId: string; requestType: "vacation" | "additional" }) => DayOffRequest;
   updateRequestStatus: (requestId: string, status: DayOffStatus) => void;
   getRequestsByUserId: (userId: string) => DayOffRequest[];
   getAllRequests: () => DayOffRequest[];
@@ -88,6 +87,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         status: "approved",
         requestType: "vacation",
         createdAt: new Date(new Date(today).setDate(today.getDate() - 2)),
+        aiSuggestions: [],
       },
       {
         id: "req_2",
@@ -98,6 +98,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         status: "pending",
         requestType: "additional",
         createdAt: new Date(new Date(today).setDate(today.getDate() - 7)),
+        aiSuggestions: ["Request is for a past date.", "Reason is very brief."],
       },
       {
         id: "req_3",
@@ -108,6 +109,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         status: "pending",
         requestType: "vacation",
         createdAt: new Date(new Date(today).setDate(today.getDate() - 1)),
+        aiSuggestions: [],
       },
       {
         id: "req_4",
@@ -118,6 +120,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         status: "approved",
         requestType: "additional",
         createdAt: new Date(new Date(today).setDate(today.getDate() - 3)),
+        aiSuggestions: [],
       },
        {
         id: "req_5",
@@ -128,6 +131,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         status: "pending",
         requestType: "vacation",
         createdAt: new Date(new Date(today).setDate(today.getDate() - 1)),
+        aiSuggestions: [],
       },
     ];
 
@@ -136,7 +140,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(false);
   }, []);
 
-  const addRequest = useCallback((requestData: Omit<DayOffRequest, "id" | "createdAt" | "userId" | "userName" | "userEmail" | "status"> & { userId: string; requestType: "vacation" | "additional" }) => {
+  const addRequest = useCallback((requestData: Omit<DayOffRequest, "id" | "createdAt" | "userId" | "userName" | "userEmail" | "status" | "aiSuggestions"> & { userId: string; requestType: "vacation" | "additional" }) => {
     const requestingUser = usersById[requestData.userId];
     const newRequest: DayOffRequest = {
       ...requestData,
@@ -145,6 +149,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       status: "pending",
       userName: requestingUser?.name,
       userEmail: requestingUser?.email,
+      aiSuggestions: [], // Explicitly initialize aiSuggestions
     };
     setRequests((prevRequests) => [newRequest, ...prevRequests]);
     return newRequest;
@@ -250,3 +255,4 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     </DataContext.Provider>
   );
 };
+

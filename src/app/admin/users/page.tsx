@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useState, useTransition } from "react";
@@ -324,7 +323,7 @@ export default function AdminUsersPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredUsers.map((user) => (
+                  filteredUsers.filter(Boolean).map((user) => (
                     <TableRow key={user.id}>
                       <TableCell className="font-medium">{user.name}</TableCell>
                       <TableCell>{user.email}</TableCell>

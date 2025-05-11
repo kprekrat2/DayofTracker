@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useMemo } from "react";
@@ -73,7 +72,7 @@ export default function AdminApprovalsPage() {
             </div>
           ) : (
             <div className="space-y-6">
-              {pendingRequests.map((request) => (
+              {pendingRequests.filter(Boolean).map((request) => (
                 <DayOffRequestItem key={request.id} request={request} />
               ))}
             </div>
@@ -83,3 +82,4 @@ export default function AdminApprovalsPage() {
     </div>
   );
 }
+

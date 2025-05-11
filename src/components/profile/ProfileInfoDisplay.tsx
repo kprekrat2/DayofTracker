@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react'; // Added useCallback here
 import { useAuth } from '@/hooks/useAuth';
 import { useData } from '@/hooks/useData';
 import type { DayOffRequest, Holiday } from '@/types';
@@ -192,3 +192,4 @@ export function ProfileInfoDisplay() {
     </div>
   );
 }
+

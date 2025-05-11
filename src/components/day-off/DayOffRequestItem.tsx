@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { DayOffRequest } from "@/types";
@@ -12,13 +11,20 @@ import { useAuth } from "@/hooks/useAuth";
 import { Ban, CalendarDays, FileText, CheckCircle2, XCircle, Tag } from "lucide-react";
 
 interface DayOffRequestItemProps {
-  request: DayOffRequest;
+  request: DayOffRequest | null | undefined; // Allow for potential null/undefined
 }
 
 export function DayOffRequestItem({ request }: DayOffRequestItemProps) {
   const { updateRequestStatus } = useData();
   const { toast } = useToast();
   const { user } = useAuth();
+
+  // Explicitly handle null or undefined request prop
+  if (!request) {
+    // This should ideally not be reached if DayOffRequestList filters correctly.
+    // console.warn("DayOffRequestItem received a null or undefined request prop.");
+    return null; // Render nothing or a fallback UI if a request is unexpectedly null
+  }
 
   const handleCancelRequest = () => {
     updateRequestStatus(request.id, "cancelled");

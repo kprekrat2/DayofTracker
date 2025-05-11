@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, PlusSquare, CalendarDays, ClipboardCheck, VenetianMask, Users } from "lucide-react";
+import { Home, PlusSquare, CalendarDays, ClipboardCheck, VenetianMask, Users, IdCard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,6 +12,7 @@ const baseNavItems = [
   { href: "/", label: "My Requests", icon: Home, adminOnly: false },
   { href: "/submit-request", label: "Submit Request", icon: PlusSquare, adminOnly: false },
   { href: "/calendar", label: "Calendar View", icon: CalendarDays, adminOnly: false },
+  { href: "/profile", label: "Personal Info", icon: IdCard, adminOnly: false },
 ];
 
 const adminNavItems = [

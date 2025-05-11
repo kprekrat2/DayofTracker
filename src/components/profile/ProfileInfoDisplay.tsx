@@ -16,7 +16,7 @@ import {
 } from 'date-fns';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { AlertCircle, CalendarCheck, CalendarClock, Info, CalendarX } from 'lucide-react';
+import { AlertCircle, CalendarCheck, CalendarClock, Info, CalendarX, Gift, MountainSnow } from 'lucide-react'; // Added Gift, MountainSnow
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface YearStats {
@@ -72,29 +72,31 @@ export function ProfileInfoDisplay() {
       (req) => req.userId === user.id && req.status === 'approved'
     );
 
-    let totalBusinessDaysInYear = 0;
+    let spentVacationBusinessDays = 0;
+    let spentAdditionalBusinessDays = 0;
+
     approvedRequests.forEach((req) => {
       const overlapStart = dateMax([new Date(req.startDate), yearStart]);
       const overlapEnd = dateMin([new Date(req.endDate), yearEnd]);
       if (overlapStart <= overlapEnd) {
-        totalBusinessDaysInYear += countBusinessDays(overlapStart, overlapEnd, holidays);
+        const businessDaysInOverlap = countBusinessDays(overlapStart, overlapEnd, holidays);
+        // Default to 'vacation' if requestType is undefined (for older requests)
+        const type = req.requestType || "vacation"; 
+
+        if (type === "vacation") {
+          spentVacationBusinessDays += businessDaysInOverlap;
+        } else if (type === "additional") {
+          spentAdditionalBusinessDays += businessDaysInOverlap;
+        }
       }
     });
     
-    // For previous year, allocations are historical, so we assume they were the same as current user settings
-    // For current year, these are the current settings.
     const allocatedVacation = user.vacationDays || 0;
     const allocatedAdditional = user.additionalDays || 0;
 
-    let spentVacation = 0;
-    let spentAdditional = 0;
-
-    if (totalBusinessDaysInYear <= allocatedVacation) {
-      spentVacation = totalBusinessDaysInYear;
-    } else {
-      spentVacation = allocatedVacation;
-      spentAdditional = Math.min(totalBusinessDaysInYear - allocatedVacation, allocatedAdditional);
-    }
+    const spentVacation = spentVacationBusinessDays;
+    const spentAdditional = spentAdditionalBusinessDays;
+    const totalApprovedDays = spentVacation + spentAdditional; 
         
     return {
       year,
@@ -102,9 +104,9 @@ export function ProfileInfoDisplay() {
       allocatedAdditional,
       spentVacation,
       spentAdditional,
-      remainingVacation: Math.max(0, allocatedVacation - spentVacation), // For previous year, this might represent unused days
-      remainingAdditional: Math.max(0, allocatedAdditional - spentAdditional), // Same for additional
-      totalApprovedDays: totalBusinessDaysInYear,
+      remainingVacation: Math.max(0, allocatedVacation - spentVacation),
+      remainingAdditional: Math.max(0, allocatedAdditional - spentAdditional),
+      totalApprovedDays,
     };
   }, [user, requests, holidays, dataLoading]);
 
@@ -115,32 +117,37 @@ export function ProfileInfoDisplay() {
     return <p>Loading user data...</p>; // Or a more elaborate skeleton
   }
 
-  const StatItem: React.FC<{ label: string; value: number; total?: number; icon?: React.ElementType; isPreviousYear?: boolean }> = ({ label, value, total, icon: Icon, isPreviousYear = false }) => (
-    <div className="mb-3">
-      <div className="flex justify-between items-center mb-1">
-        <span className="text-sm font-medium text-muted-foreground flex items-center">
-          {Icon && <Icon className="mr-2 h-4 w-4 text-primary/80" />}
-          {label}
-        </span>
-        <span className="text-sm font-semibold">{value}{total !== undefined && !isPreviousYear ? ` / ${total}` : (isPreviousYear && total !== undefined ? ` of ${total}` : '')}</span>
-      </div>
-      {total !== undefined && total > 0 && !isPreviousYear && (
-        <Progress value={(value / total) * 100} className="h-2" />
-      )}
-       {total !== undefined && total === 0 && value > 0 && !isPreviousYear && (
-         <div className="text-xs text-destructive/80 flex items-center mt-1">
-            <AlertCircle className="h-3 w-3 mr-1 shrink-0" />
-            Days taken exceed allocation (0 days allocated).
-         </div>
-      )}
-      {isPreviousYear && total !== undefined && value > total && (
-        <div className="text-xs text-orange-600 dark:text-orange-400 flex items-center mt-1">
-          <AlertCircle className="h-3 w-3 mr-1 shrink-0" />
-          Exceeded allocated days in {previousYearStats.year}.
+  const StatItem: React.FC<{ label: string; value: number; total?: number; icon?: React.ElementType; isPreviousYear?: boolean; isAdditional?: boolean }> = ({ label, value, total, icon: Icon, isPreviousYear = false, isAdditional = false }) => {
+    const defaultIcon = isAdditional ? Gift : MountainSnow;
+    const DisplayIcon = Icon || defaultIcon;
+    
+    return (
+      <div className="mb-3">
+        <div className="flex justify-between items-center mb-1">
+          <span className="text-sm font-medium text-muted-foreground flex items-center">
+            <DisplayIcon className="mr-2 h-4 w-4 text-primary/80" />
+            {label}
+          </span>
+          <span className="text-sm font-semibold">{value}{total !== undefined && !isPreviousYear ? ` / ${total}` : (isPreviousYear && total !== undefined ? ` of ${total}` : '')}</span>
         </div>
-      )}
-    </div>
-  );
+        {total !== undefined && total > 0 && !isPreviousYear && (
+          <Progress value={(value / total) * 100} className="h-2" />
+        )}
+        {total !== undefined && total === 0 && value > 0 && !isPreviousYear && (
+          <div className="text-xs text-destructive/80 flex items-center mt-1">
+              <AlertCircle className="h-3 w-3 mr-1 shrink-0" />
+              Days taken exceed allocation (0 days allocated).
+          </div>
+        )}
+        {isPreviousYear && total !== undefined && value > total && (
+          <div className="text-xs text-orange-600 dark:text-orange-400 flex items-center mt-1">
+            <AlertCircle className="h-3 w-3 mr-1 shrink-0" />
+            Exceeded allocated days in {previousYearStats.year}.
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-8">
@@ -153,13 +160,13 @@ export function ProfileInfoDisplay() {
           <CardContent>
             <StatItem label="Total Approved Days Off" value={currentYearStats.totalApprovedDays} icon={CalendarCheck}/>
             <hr className="my-3"/>
-            <StatItem label="Allocated Vacation Days" value={currentYearStats.allocatedVacation} />
+            <StatItem label="Allocated Vacation Days" value={currentYearStats.allocatedVacation} icon={MountainSnow} />
             <StatItem label="Spent Vacation Days" value={currentYearStats.spentVacation} total={currentYearStats.allocatedVacation} />
             <StatItem label="Remaining Vacation Days" value={currentYearStats.remainingVacation} />
             <hr className="my-3"/>
-            <StatItem label="Allocated Additional Days" value={currentYearStats.allocatedAdditional} icon={CalendarClock} />
-            <StatItem label="Spent Additional Days" value={currentYearStats.spentAdditional} total={currentYearStats.allocatedAdditional} />
-            <StatItem label="Remaining Additional Days" value={currentYearStats.remainingAdditional} />
+            <StatItem label="Allocated Additional Days" value={currentYearStats.allocatedAdditional} icon={Gift} isAdditional />
+            <StatItem label="Spent Additional Days" value={currentYearStats.spentAdditional} total={currentYearStats.allocatedAdditional} isAdditional />
+            <StatItem label="Remaining Additional Days" value={currentYearStats.remainingAdditional} isAdditional />
           </CardContent>
         </Card>
 
@@ -171,14 +178,13 @@ export function ProfileInfoDisplay() {
           <CardContent>
             <StatItem label="Total Approved Days Off" value={previousYearStats.totalApprovedDays} icon={CalendarX} isPreviousYear/>
              <hr className="my-3"/>
-            <StatItem label="Allocated Vacation Days" value={previousYearStats.allocatedVacation} isPreviousYear />
+            <StatItem label="Allocated Vacation Days" value={previousYearStats.allocatedVacation} icon={MountainSnow} isPreviousYear />
             <StatItem label="Spent Vacation Days" value={previousYearStats.spentVacation} total={previousYearStats.allocatedVacation} isPreviousYear />
-            {/* Remaining days from previous year are generally not "remaining" in the current context, but shown for historical data */}
             <StatItem label="Unused Vacation Days (End of Year)" value={previousYearStats.remainingVacation} isPreviousYear />
             <hr className="my-3"/>
-            <StatItem label="Allocated Additional Days" value={previousYearStats.allocatedAdditional} icon={CalendarClock} isPreviousYear/>
-            <StatItem label="Spent Additional Days" value={previousYearStats.spentAdditional} total={previousYearStats.allocatedAdditional} isPreviousYear />
-            <StatItem label="Unused Additional Days (End of Year)" value={previousYearStats.remainingAdditional} isPreviousYear />
+            <StatItem label="Allocated Additional Days" value={previousYearStats.allocatedAdditional} icon={Gift} isAdditional isPreviousYear/>
+            <StatItem label="Spent Additional Days" value={previousYearStats.spentAdditional} total={previousYearStats.allocatedAdditional} isAdditional isPreviousYear />
+            <StatItem label="Unused Additional Days (End of Year)" value={previousYearStats.remainingAdditional} isAdditional isPreviousYear />
           </CardContent>
         </Card>
       </div>
@@ -194,4 +200,3 @@ export function ProfileInfoDisplay() {
     </div>
   );
 }
-

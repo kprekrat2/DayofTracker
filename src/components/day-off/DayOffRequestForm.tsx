@@ -17,6 +17,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { CalendarIcon, Send } from "lucide-react";
@@ -36,6 +37,9 @@ const dayOffRequestFormSchema = z.object({
   }),
   endDate: z.date({
     required_error: "End date is required.",
+  }),
+  requestType: z.enum(["vacation", "additional"], {
+    required_error: "Request type is required.",
   }),
   reason: z.string()
     .min(이유_최소_길이, { message: `Reason must be at least ${이유_최소_길이} characters.`})
@@ -58,6 +62,7 @@ export function DayOffRequestForm() {
     resolver: zodResolver(dayOffRequestFormSchema),
     defaultValues: {
       reason: "",
+      // requestType: "vacation", // Optionally set a default
     },
   });
 
@@ -69,8 +74,13 @@ export function DayOffRequestForm() {
 
     startTransition(() => {
       try {
-        // Pass data without aiSuggestions
-        const newRequest = addRequest({ ...data, userId: user.id });
+        const newRequest = addRequest({ 
+            startDate: data.startDate,
+            endDate: data.endDate,
+            reason: data.reason,
+            requestType: data.requestType, // Include requestType
+            userId: user.id 
+        });
         toast({
           title: "Request Submitted!",
           description: `Your day-off request from ${format(data.startDate, "PPP")} to ${format(data.endDate, "PPP")} has been submitted.`,
@@ -174,6 +184,30 @@ export function DayOffRequestForm() {
             </div>
             <FormField
               control={form.control}
+              name="requestType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Request Type</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select the type of day off" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="vacation">Vacation Day</SelectItem>
+                      <SelectItem value="additional">Additional Day (e.g., special leave)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>
+                    Choose if this is a standard vacation day or an additional day off.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
               name="reason"
               render={({ field }) => (
                 <FormItem>
@@ -203,4 +237,3 @@ export function DayOffRequestForm() {
     </Card>
   );
 }
-

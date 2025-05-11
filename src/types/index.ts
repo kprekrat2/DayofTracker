@@ -20,6 +20,7 @@ export interface DayOffRequest {
   endDate: Date;
   reason: string;
   status: DayOffStatus;
+  requestType?: "vacation" | "additional"; // Added to distinguish request type
   aiSuggestions?: string[];
   createdAt: Date;
 }
@@ -29,4 +30,3 @@ export interface Holiday {
   name: string;
   date: Date;
 }
-

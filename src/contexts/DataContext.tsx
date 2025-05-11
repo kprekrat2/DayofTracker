@@ -8,7 +8,7 @@ interface DataContextType {
   requests: DayOffRequest[];
   holidays: Holiday[];
   isLoading: boolean;
-  addRequest: (request: Omit<DayOffRequest, "id" | "createdAt" | "userId" | "userName" | "userEmail" > & { userId: string }) => DayOffRequest;
+  addRequest: (request: Omit<DayOffRequest, "id" | "createdAt" | "userId" | "userName" | "userEmail" > & { userId: string; requestType: "vacation" | "additional" }) => DayOffRequest;
   updateRequestStatus: (requestId: string, status: DayOffStatus) => void;
   getRequestsByUserId: (userId: string) => DayOffRequest[];
   getAllRequests: () => DayOffRequest[];
@@ -86,6 +86,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         endDate: new Date(new Date(today).setDate(today.getDate() + 11)),
         reason: "Vacation for Demo Employee",
         status: "approved",
+        requestType: "vacation",
         createdAt: new Date(new Date(today).setDate(today.getDate() - 2)),
       },
       {
@@ -95,6 +96,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         endDate: new Date(new Date(today).setDate(today.getDate() - 5)),
         reason: "Personal day for Demo Employee",
         status: "pending",
+        requestType: "additional",
         createdAt: new Date(new Date(today).setDate(today.getDate() - 7)),
       },
       {
@@ -104,6 +106,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         endDate: new Date(new Date(today).setDate(today.getDate() + 17)),
         reason: "Conference trip for Jane",
         status: "pending",
+        requestType: "vacation",
         createdAt: new Date(new Date(today).setDate(today.getDate() - 1)),
       },
       {
@@ -113,6 +116,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         endDate: new Date(new Date(today).setDate(today.getDate() + 3)),
         reason: "Medical appointment for Jane",
         status: "approved",
+        requestType: "additional",
         createdAt: new Date(new Date(today).setDate(today.getDate() - 3)),
       },
        {
@@ -122,6 +126,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         endDate: new Date(new Date(today).setDate(today.getDate() + 6)),
         reason: "Admin taking a break",
         status: "pending",
+        requestType: "vacation",
         createdAt: new Date(new Date(today).setDate(today.getDate() - 1)),
       },
     ];
@@ -131,7 +136,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(false);
   }, []);
 
-  const addRequest = useCallback((requestData: Omit<DayOffRequest, "id" | "createdAt" | "userId" | "userName" | "userEmail"> & { userId: string }) => {
+  const addRequest = useCallback((requestData: Omit<DayOffRequest, "id" | "createdAt" | "userId" | "userName" | "userEmail" | "status"> & { userId: string; requestType: "vacation" | "additional" }) => {
     const requestingUser = usersById[requestData.userId];
     const newRequest: DayOffRequest = {
       ...requestData,
@@ -245,4 +250,3 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     </DataContext.Provider>
   );
 };
-

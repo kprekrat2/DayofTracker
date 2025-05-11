@@ -8,7 +8,7 @@ import type { DayOffRequest, Holiday, User, YearStats } from '@/types'; // Impor
 import { calculateUserYearStats } from '@/lib/dayoff-utils'; // Import the new utility function
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { AlertCircle, CalendarCheck, CalendarClock, Info, CalendarX, Gift, MountainSnow } from 'lucide-react';
+import { AlertCircle, CalendarCheck, CalendarClock, Info, CalendarX, Gift, MountainSnow, Hourglass } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '../ui/skeleton';
 
@@ -20,23 +20,30 @@ export function ProfileInfoDisplay() {
   const currentYear = useMemo(() => new Date().getFullYear(), []);
   const previousYear = useMemo(() => currentYear - 1, [currentYear]);
 
+  const defaultYearStats: YearStats = { 
+    year: 0, allocatedVacation: 0, allocatedAdditional: 0, 
+    spentVacation: 0, spentAdditional: 0, 
+    requestedVacation: 0, requestedAdditional: 0, 
+    pendingVacation: 0, pendingAdditional: 0, 
+    remainingVacation: 0, remainingAdditional: 0, 
+    totalApprovedDays: 0 
+  };
+
   const currentYearStats = useMemo(() => {
     if (!user || dataLoading) {
-      // Return a skeleton or default YearStats structure
-      return { year: currentYear, allocatedVacation: 0, allocatedAdditional: 0, spentVacation: 0, spentAdditional: 0, requestedVacation: 0, requestedAdditional: 0, remainingVacation: 0, remainingAdditional: 0, totalApprovedDays: 0 };
+      return { ...defaultYearStats, year: currentYear };
     }
     const userRequests = requests.filter(req => req.userId === user.id);
     return calculateUserYearStats(currentYear, user, userRequests, holidays);
-  }, [currentYear, user, requests, holidays, dataLoading]);
+  }, [currentYear, user, requests, holidays, dataLoading, defaultYearStats]);
 
   const previousYearStats = useMemo(() => {
     if (!user || dataLoading) {
-      // Return a skeleton or default YearStats structure
-      return { year: previousYear, allocatedVacation: 0, allocatedAdditional: 0, spentVacation: 0, spentAdditional: 0, requestedVacation: 0, requestedAdditional: 0, remainingVacation: 0, remainingAdditional: 0, totalApprovedDays: 0 };
+      return { ...defaultYearStats, year: previousYear };
     }
     const userRequests = requests.filter(req => req.userId === user.id);
     return calculateUserYearStats(previousYear, user, userRequests, holidays);
-  }, [previousYear, user, requests, holidays, dataLoading]);
+  }, [previousYear, user, requests, holidays, dataLoading, defaultYearStats]);
 
 
   if (dataLoading || !user) {
@@ -109,13 +116,13 @@ export function ProfileInfoDisplay() {
             <StatItem label="Total Approved Days Off" value={currentYearStats.totalApprovedDays} icon={CalendarCheck}/>
             <hr className="my-3"/>
             <StatItem label="Allocated Vacation Days" value={currentYearStats.allocatedVacation} icon={MountainSnow} />
-            <StatItem label="Requested Vacation Days (Pending/Approved)" value={currentYearStats.requestedVacation} icon={CalendarClock} />
             <StatItem label="Spent (Approved) Vacation Days" value={currentYearStats.spentVacation} total={currentYearStats.allocatedVacation} />
+            <StatItem label="Pending Vacation Days" value={currentYearStats.pendingVacation} icon={Hourglass} />
             <StatItem label="Remaining Vacation Days" value={currentYearStats.remainingVacation} />
             <hr className="my-3"/>
             <StatItem label="Allocated Additional Days" value={currentYearStats.allocatedAdditional} icon={Gift} isAdditional />
-            <StatItem label="Requested Additional Days (Pending/Approved)" value={currentYearStats.requestedAdditional} icon={CalendarClock} isAdditional />
             <StatItem label="Spent (Approved) Additional Days" value={currentYearStats.spentAdditional} total={currentYearStats.allocatedAdditional} isAdditional />
+            <StatItem label="Pending Additional Days" value={currentYearStats.pendingAdditional} icon={Hourglass} isAdditional />
             <StatItem label="Remaining Additional Days" value={currentYearStats.remainingAdditional} isAdditional />
           </CardContent>
         </Card>
@@ -129,13 +136,13 @@ export function ProfileInfoDisplay() {
             <StatItem label="Total Approved Days Off" value={previousYearStats.totalApprovedDays} icon={CalendarX} isPreviousYear/>
              <hr className="my-3"/>
             <StatItem label="Allocated Vacation Days" value={previousYearStats.allocatedVacation} icon={MountainSnow} isPreviousYear />
-            <StatItem label="Requested Vacation Days (Pending/Approved)" value={previousYearStats.requestedVacation} icon={CalendarClock} isPreviousYear />
             <StatItem label="Spent (Approved) Vacation Days" value={previousYearStats.spentVacation} total={previousYearStats.allocatedVacation} isPreviousYear />
+            <StatItem label="Pending Vacation Days (End of Year)" value={previousYearStats.pendingVacation} icon={Hourglass} isPreviousYear />
             <StatItem label="Unused Vacation Days (End of Year)" value={previousYearStats.remainingVacation} isPreviousYear />
             <hr className="my-3"/>
             <StatItem label="Allocated Additional Days" value={previousYearStats.allocatedAdditional} icon={Gift} isAdditional isPreviousYear/>
-            <StatItem label="Requested Additional Days (Pending/Approved)" value={previousYearStats.requestedAdditional} icon={CalendarClock} isAdditional isPreviousYear />
             <StatItem label="Spent (Approved) Additional Days" value={previousYearStats.spentAdditional} total={previousYearStats.allocatedAdditional} isAdditional isPreviousYear />
+            <StatItem label="Pending Additional Days (End of Year)" value={previousYearStats.pendingAdditional} icon={Hourglass} isAdditional isPreviousYear />
             <StatItem label="Unused Additional Days (End of Year)" value={previousYearStats.remainingAdditional} isAdditional isPreviousYear />
           </CardContent>
         </Card>
@@ -152,3 +159,4 @@ export function ProfileInfoDisplay() {
     </div>
   );
 }
+

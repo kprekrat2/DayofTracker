@@ -73,6 +73,9 @@ export function calculateUserYearStats(
 
   const totalApprovedDays = spentVacationBusinessDays + spentAdditionalBusinessDays;
 
+  const pendingVacation = Math.max(0, requestedVacationBusinessDays - spentVacationBusinessDays);
+  const pendingAdditional = Math.max(0, requestedAdditionalBusinessDays - spentAdditionalBusinessDays);
+
   return {
     year,
     allocatedVacation,
@@ -81,8 +84,11 @@ export function calculateUserYearStats(
     spentAdditional: spentAdditionalBusinessDays,
     requestedVacation: requestedVacationBusinessDays,
     requestedAdditional: requestedAdditionalBusinessDays,
+    pendingVacation,
+    pendingAdditional,
     remainingVacation: Math.max(0, allocatedVacation - spentVacationBusinessDays),
     remainingAdditional: Math.max(0, allocatedAdditional - spentAdditionalBusinessDays),
     totalApprovedDays,
   };
 }
+

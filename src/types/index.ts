@@ -39,7 +39,10 @@ export interface YearStats {
   spentAdditional: number; // Approved
   requestedVacation: number; // Pending + Approved
   requestedAdditional: number; // Pending + Approved
+  pendingVacation: number; // Just Pending
+  pendingAdditional: number; // Just Pending
   remainingVacation: number;
   remainingAdditional: number;
   totalApprovedDays: number;
 }
+

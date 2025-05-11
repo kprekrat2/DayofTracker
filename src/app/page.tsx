@@ -1,15 +1,24 @@
 
-"use client"; // Make this a client component to use hooks
+"use client"; 
 
 import { DayOffRequestList } from "@/components/day-off/DayOffRequestList";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function RequestsPage() {
   const { user, isLoading } = useAuth();
+  const router = useRouter();
 
-  if (isLoading) {
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, isLoading, router]);
+
+  if (isLoading || !user) { // Keep showing skeleton or effectively redirect
     return (
       <div className="space-y-8">
         <Card>
@@ -25,8 +34,8 @@ export default function RequestsPage() {
     );
   }
 
-  const title = user?.role === "admin" ? "All Day-Off Requests" : "My Day-Off Requests";
-  const description = user?.role === "admin" 
+  const title = user.role === "admin" ? "All Day-Off Requests" : "My Day-Off Requests";
+  const description = user.role === "admin" 
     ? "View and manage all submitted day-off requests in the system."
     : "View and manage your submitted day-off requests.";
 
@@ -34,13 +43,11 @@ export default function RequestsPage() {
     <div className="space-y-8">
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">{user ? title : "Day-Off Requests"}</CardTitle>
-          <CardDescription>
-            {user ? description : "Please log in to see requests."}
-          </CardDescription>
+          <CardTitle className="text-2xl">{title}</CardTitle>
+          <CardDescription>{description}</CardDescription>
         </CardHeader>
         <CardContent>
-          {user ? <DayOffRequestList /> : null }
+          <DayOffRequestList />
         </CardContent>
       </Card>
     </div>

@@ -13,8 +13,8 @@ interface DataContextType {
   getRequestsByUserId: (userId: string) => DayOffRequest[];
   getAllRequests: () => DayOffRequest[];
   users: User[];
-  addUser: (userData: Omit<User, "id">) => User;
-  updateUser: (userId: string, userData: Partial<Omit<User, "id">>) => void;
+  addUser: (userData: Omit<User, "id"> & { password?: string }) => User;
+  updateUser: (userId: string, userData: Partial<Omit<User, "id"> & { password?: string }>) => void;
   deleteUser: (userId: string) => void;
   addHoliday: (holiday: Omit<Holiday, "id">) => Holiday;
   deleteHoliday: (holidayId: string) => void;
@@ -22,12 +22,13 @@ interface DataContextType {
 
 export const DataContext = createContext<DataContextType | undefined>(undefined);
 
-// Mock users for demonstration purposes
+// Mock users for demonstration purposes with passwords
 const MOCK_REGULAR_USER: User = {
   id: "user_123",
   name: "Demo Employee",
-  email: "employee@example.com",
+  email: "user@example.com", // Changed for clarity
   role: "user",
+  password: "password123",
 };
 
 const MOCK_ADMIN_USER: User = { 
@@ -35,13 +36,15 @@ const MOCK_ADMIN_USER: User = {
   name: "Admin Manager",
   email: "admin@example.com",
   role: "admin",
+  password: "adminpassword",
 };
 
 const MOCK_USER_TWO: User = {
   id: "user_456",
   name: "Jane Colleague",
-  email: "jane.colleague@example.com",
+  email: "jane@example.com", // Changed for clarity
   role: "user",
+  password: "janepassword",
 };
 
 const INITIAL_USERS = [MOCK_REGULAR_USER, MOCK_ADMIN_USER, MOCK_USER_TWO];
@@ -178,27 +181,46 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     setHolidays((prevHolidays) => prevHolidays.filter(h => h.id !== holidayId));
   }, []);
 
-  const addUser = useCallback((userData: Omit<User, "id">) => {
+  const addUser = useCallback((userData: Omit<User, "id"> & { password?: string }) => {
+    // In a real app, hash the password here before saving
     const newUser: User = {
       ...userData,
       id: `user_${Date.now()}`,
+      password: userData.password || "defaultpassword", // Store password (plain text for demo)
     };
     setUsers((prevUsers) => [...prevUsers, newUser]);
     return newUser;
   }, []);
 
-  const updateUser = useCallback((userId: string, userData: Partial<Omit<User, "id">>) => {
+  const updateUser = useCallback((userId: string, userData: Partial<Omit<User, "id"> & { password?: string }>) => {
     setUsers((prevUsers) =>
-      prevUsers.map((user) =>
-        user.id === userId ? { ...user, ...userData } : user
-      )
+      prevUsers.map((user) => {
+        if (user.id === userId) {
+          const updatedUser = { ...user, ...userData };
+          // Only update password if a new one is provided and it's not an empty string
+          if (userData.password && userData.password.length > 0) {
+            updatedUser.password = userData.password; // Store new password (plain text for demo)
+          } else if (userData.password === '') { // If password field was explicitly cleared but not intended to change
+            // keep old password by not setting updatedUser.password from userData.password
+            // This case ensures if password field is optional and cleared, it doesn't erase existing one
+            // However, our edit form logic will ensure 'password' is either a valid new password or undefined (if not changing)
+          } else if (userData.hasOwnProperty('password') && !userData.password) {
+             // If password was intentionally set to undefined/null (e.g. from a form field that was cleared)
+             // and you want to keep the old password, do nothing with user.password.
+             // If you want to clear it (not recommended), set updatedUser.password = undefined or handle as error.
+             // For this demo, if userData.password is present but falsy (empty string), we effectively don't change it unless explicit.
+             // The form logic should ensure userData.password is either a valid new password or undefined.
+          }
+          // If userData.password is not provided, user.password remains unchanged.
+          return updatedUser;
+        }
+        return user;
+      })
     );
   }, []);
 
   const deleteUser = useCallback((userId: string) => {
     setUsers((prevUsers) => prevUsers.filter(u => u.id !== userId));
-    // Optionally, handle cascading deletes or reassignments for requests linked to this user
-    // For simplicity, we are not handling it here.
   }, []);
 
 

@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { Briefcase, LogOut, UserCircle, ShieldCheck, User } from "lucide-react";
+import { Briefcase, LogOut, UserCircle, ShieldCheck, User, LogInIcon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -17,9 +17,11 @@ import {
 import { NavMenu } from "./NavMenu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { PanelLeft } from "lucide-react";
+import { usePathname } from "next/navigation";
 
 export function Header() {
-  const { user, logout, loginAsAdmin, loginAsUser } = useAuth();
+  const { user, logout } = useAuth();
+  const pathname = usePathname();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -42,7 +44,7 @@ export function Header() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src={`https://picsum.photos/seed/${user.id}/40/40`} alt={user.name} data-ai-hint="profile avatar" />
+                    <AvatarImage src={`https://picsum.photos/seed/${user.id}/40/40`} alt={user.name} data-ai-hint="profile avatar"/>
                     <AvatarFallback>{user.name.substring(0, 2).toUpperCase()}</AvatarFallback>
                   </Avatar>
                 </Button>
@@ -67,14 +69,13 @@ export function Header() {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <div className="flex items-center gap-2">
-              <Button variant="outline" onClick={loginAsUser}>
-                <User className="mr-2 h-4 w-4" /> Login as User
+            pathname !== '/login' && ( // Only show login button if not on login page
+              <Button variant="outline" asChild>
+                <Link href="/login">
+                  <LogInIcon className="mr-2 h-4 w-4" /> Login
+                </Link>
               </Button>
-              <Button variant="outline" onClick={loginAsAdmin}>
-                <ShieldCheck className="mr-2 h-4 w-4" /> Login as Admin
-              </Button>
-            </div>
+            )
           )}
           {user && (
             <div className="md:hidden">
@@ -96,4 +97,3 @@ export function Header() {
     </header>
   );
 }
-

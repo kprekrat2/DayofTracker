@@ -41,18 +41,17 @@ export default function AdminHolidaysPage() {
     resolver: zodResolver(holidayFormSchema),
     defaultValues: {
       name: "",
-      date: new Date(selectedYear, 0, 1), // Default to Jan 1 of selected year
+      date: new Date(selectedYear, 0, 1), 
     },
   });
 
   useEffect(() => {
     if (!authLoading && (!user || user.role !== 'admin')) {
-      router.push('/');
+      router.push('/login'); // Redirect to login if not admin
     }
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    // Update default date in form when selectedYear changes
     holidayForm.reset({ name: "", date: new Date(selectedYear, 0, 1) });
   }, [selectedYear, holidayForm]);
 
@@ -64,20 +63,18 @@ export default function AdminHolidaysPage() {
 
   const handleYearChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const year = parseInt(event.target.value, 10);
-    if (!isNaN(year) && year > 1900 && year < 2200) { // Basic validation
+    if (!isNaN(year) && year > 1900 && year < 2200) { 
       setSelectedYear(year);
     }
   };
 
   const onSubmitHoliday = (data: HolidayFormValues) => {
-    // Ensure the date added is within the selected year
     if (getYear(data.date) !== selectedYear) {
         toast({
             title: "Invalid Date",
             description: `Holiday date must be within the year ${selectedYear}.`,
             variant: "destructive",
         });
-        // Optionally reset date to start of selected year
         holidayForm.setValue("date", new Date(selectedYear, data.date.getMonth(), data.date.getDate()));
         return;
     }
@@ -120,9 +117,9 @@ export default function AdminHolidaysPage() {
             <Skeleton className="h-4 w-1/2" />
           </CardHeader>
           <CardContent className="space-y-6">
-            <Skeleton className="h-10 w-1/4" /> {/* Year selector skeleton */}
-            <Skeleton className="h-40 w-full rounded-lg" /> {/* Form skeleton */}
-            <Skeleton className="h-32 w-full rounded-lg" /> {/* List skeleton */}
+            <Skeleton className="h-10 w-1/4" /> 
+            <Skeleton className="h-40 w-full rounded-lg" /> 
+            <Skeleton className="h-32 w-full rounded-lg" /> 
           </CardContent>
         </Card>
       </div>
@@ -200,10 +197,10 @@ export default function AdminHolidaysPage() {
                                 onSelect={(date) => {
                                   if (date) field.onChange(date);
                                 }}
-                                disabled={(date) => getYear(date) !== selectedYear} // Only allow dates in selected year
+                                disabled={(date) => getYear(date) !== selectedYear} 
                                 initialFocus
-                                month={new Date(selectedYear, field.value ? field.value.getMonth() : 0, 1)} // Start calendar in selected year
-                                defaultMonth={new Date(selectedYear, 0, 1)} // Default to Jan of selected year
+                                month={new Date(selectedYear, field.value ? field.value.getMonth() : 0, 1)} 
+                                defaultMonth={new Date(selectedYear, 0, 1)} 
                                 fromYear={selectedYear}
                                 toYear={selectedYear}
                               />

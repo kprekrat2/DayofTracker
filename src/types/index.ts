@@ -4,6 +4,7 @@ export interface User {
   name: string;
   email: string;
   role: "admin" | "user";
+  password?: string; // Password is optional as it's sensitive and might not always be fetched/present
 }
 
 export type DayOffStatus = "pending" | "approved" | "rejected" | "cancelled";

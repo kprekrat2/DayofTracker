@@ -18,16 +18,48 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { PlusCircle, Trash2, Edit3, Users, ShieldAlert, UserPlus, Search } from "lucide-react";
+import { PlusCircle, Trash2, Edit3, Users, ShieldAlert, UserPlus, Search, KeyRound } from "lucide-react";
 import type { User } from "@/types";
 
-const userFormSchema = z.object({
+const addUserFormSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }).max(50, { message: "Name must not exceed 50 characters."}),
   email: z.string().email({ message: "Invalid email address." }),
   role: z.enum(["admin", "user"], { required_error: "Role is required." }),
+  password: z.string().min(6, { message: "Password must be at least 6 characters." }),
+  confirmPassword: z.string().min(6, { message: "Please confirm password." }),
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Passwords do not match.",
+  path: ["confirmPassword"],
 });
 
-type UserFormValues = z.infer<typeof userFormSchema>;
+type AddUserFormValues = z.infer<typeof addUserFormSchema>;
+
+const editUserFormSchema = z.object({
+  name: z.string().min(2, { message: "Name must be at least 2 characters." }).max(50, { message: "Name must not exceed 50 characters."}),
+  email: z.string().email({ message: "Invalid email address." }),
+  role: z.enum(["admin", "user"], { required_error: "Role is required." }),
+  password: z.string().min(6, { message: "New password must be at least 6 characters." }).optional().or(z.literal('')), // Optional, can be empty string if not changing
+  confirmPassword: z.string().optional().or(z.literal('')),
+}).refine(data => {
+  if (data.password && data.password.length > 0) { // If password is being changed
+    return data.password === data.confirmPassword;
+  }
+  return true; // No password change, or passwords match
+}, {
+  message: "New passwords do not match.",
+  path: ["confirmPassword"],
+}).refine(data => { // If password is set, confirmPassword must also be set
+  if (data.password && data.password.length > 0 && (!data.confirmPassword || data.confirmPassword.length === 0)) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Please confirm the new password.",
+  path: ["confirmPassword"],
+});
+
+type EditUserFormValues = z.infer<typeof editUserFormSchema>;
+
 
 export default function AdminUsersPage() {
   const { user: currentUser, isLoading: authLoading } = useAuth();
@@ -41,18 +73,18 @@ export default function AdminUsersPage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const addUserForm = useForm<UserFormValues>({
-    resolver: zodResolver(userFormSchema),
-    defaultValues: { name: "", email: "", role: "user" },
+  const addUserForm = useForm<AddUserFormValues>({
+    resolver: zodResolver(addUserFormSchema),
+    defaultValues: { name: "", email: "", role: "user", password: "", confirmPassword: "" },
   });
 
-  const editUserForm = useForm<UserFormValues>({
-    resolver: zodResolver(userFormSchema),
+  const editUserForm = useForm<EditUserFormValues>({
+    resolver: zodResolver(editUserFormSchema),
   });
 
   useEffect(() => {
     if (!authLoading && (!currentUser || currentUser.role !== 'admin')) {
-      router.push('/');
+      router.push('/login'); // Redirect to login if not admin
     }
   }, [currentUser, authLoading, router]);
 
@@ -62,14 +94,16 @@ export default function AdminUsersPage() {
         name: selectedUser.name,
         email: selectedUser.email,
         role: selectedUser.role,
+        password: "", // Don't prefill password
+        confirmPassword: "",
       });
     }
   }, [selectedUser, isEditUserDialogOpen, editUserForm]);
 
-  const handleAddUser = (data: UserFormValues) => {
+  const handleAddUser = (data: AddUserFormValues) => {
     startTransition(() => {
       try {
-        addUser(data);
+        addUser({ name: data.name, email: data.email, role: data.role, password: data.password });
         toast({ title: "User Added", description: `${data.name} has been successfully added.` });
         setIsAddUserDialogOpen(false);
         addUserForm.reset();
@@ -79,14 +113,23 @@ export default function AdminUsersPage() {
     });
   };
 
-  const handleEditUser = (data: UserFormValues) => {
+  const handleEditUser = (data: EditUserFormValues) => {
     if (!selectedUser) return;
     startTransition(() => {
       try {
-        updateUser(selectedUser.id, data);
+        const updatePayload: Partial<User & { password?: string }> = {
+          name: data.name,
+          email: data.email,
+          role: data.role,
+        };
+        if (data.password && data.password.length > 0) {
+          updatePayload.password = data.password;
+        }
+        updateUser(selectedUser.id, updatePayload);
         toast({ title: "User Updated", description: `${data.name}'s information has been updated.` });
         setIsEditUserDialogOpen(false);
         setSelectedUser(null);
+        editUserForm.reset();
       } catch (error) {
         toast({ title: "Failed to Update User", description: (error as Error).message || "Could not update user.", variant: "destructive" });
       }
@@ -95,7 +138,6 @@ export default function AdminUsersPage() {
 
   const handleDeleteUser = () => {
     if (!selectedUser) return;
-    // Prevent admin from deleting themselves
     if (selectedUser.id === currentUser?.id) {
       toast({ title: "Action Denied", description: "You cannot delete your own account.", variant: "destructive"});
       setIsDeleteUserDialogOpen(false);
@@ -139,8 +181,8 @@ export default function AdminUsersPage() {
             <Skeleton className="h-4 w-1/2" />
           </CardHeader>
           <CardContent className="space-y-6">
-            <Skeleton className="h-10 w-full" /> {/* Search and Add button skeleton */}
-            <Skeleton className="h-64 w-full rounded-lg" /> {/* Table skeleton */}
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-64 w-full rounded-lg" />
           </CardContent>
         </Card>
       </div>
@@ -155,7 +197,7 @@ export default function AdminUsersPage() {
             <Users className="h-7 w-7 text-primary" /> Manage Users
           </CardTitle>
           <CardDescription>
-            Add, edit, or remove user accounts and manage their roles.
+            Add, edit, or remove user accounts and manage their roles and credentials.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -175,7 +217,7 @@ export default function AdminUsersPage() {
                   <UserPlus className="mr-2 h-4 w-4" /> Add New User
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
+              <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                   <DialogTitle>Add New User</DialogTitle>
                   <DialogDescription>Fill in the details for the new user account.</DialogDescription>
@@ -195,6 +237,20 @@ export default function AdminUsersPage() {
                         <FormControl><Input type="email" placeholder="user@example.com" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
+                    )} />
+                    <FormField control={addUserForm.control} name="password" render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )} />
+                    <FormField control={addUserForm.control} name="confirmPassword" render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Confirm Password</FormLabel>
+                        <FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl>
+                        <FormMessage />
+                        </FormItem>
                     )} />
                     <FormField control={addUserForm.control} name="role" render={({ field }) => (
                       <FormItem>
@@ -261,26 +317,18 @@ export default function AdminUsersPage() {
 
       {/* Edit User Dialog */}
       <Dialog open={isEditUserDialogOpen} onOpenChange={setIsEditUserDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Edit User: {selectedUser?.name}</DialogTitle>
-            <DialogDescription>Update the user's details and role.</DialogDescription>
+            <DialogDescription>Update the user's details, role, or password.</DialogDescription>
           </DialogHeader>
           <Form {...editUserForm}>
             <form onSubmit={editUserForm.handleSubmit(handleEditUser)} className="space-y-4 py-4">
               <FormField control={editUserForm.control} name="name" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Full Name</FormLabel>
-                  <FormControl><Input {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
+                <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
               )} />
               <FormField control={editUserForm.control} name="email" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email Address</FormLabel>
-                  <FormControl><Input type="email" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
+                <FormItem><FormLabel>Email Address</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
               )} />
               <FormField control={editUserForm.control} name="role" render={({ field }) => (
                 <FormItem>
@@ -298,7 +346,24 @@ export default function AdminUsersPage() {
                   <FormMessage />
                 </FormItem>
               )} />
-              <DialogFooter>
+              <div className="space-y-2 pt-2 border-t mt-4">
+                 <Label className="text-sm font-medium flex items-center gap-1"><KeyRound size={14}/>Change Password (Optional)</Label>
+                <FormField control={editUserForm.control} name="password" render={({ field }) => (
+                    <FormItem>
+                    <FormLabel className="text-xs">New Password</FormLabel>
+                    <FormControl><Input type="password" placeholder="Leave blank to keep current" {...field} /></FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )} />
+                <FormField control={editUserForm.control} name="confirmPassword" render={({ field }) => (
+                    <FormItem>
+                    <FormLabel className="text-xs">Confirm New Password</FormLabel>
+                    <FormControl><Input type="password" placeholder="Confirm new password" {...field} /></FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )} />
+              </div>
+              <DialogFooter className="pt-4">
                 <DialogClose asChild><Button type="button" variant="outline" onClick={() => setSelectedUser(null)}>Cancel</Button></DialogClose>
                 <Button type="submit" disabled={isPending}>{isPending ? "Saving..." : "Save Changes"}</Button>
               </DialogFooter>
@@ -328,4 +393,3 @@ export default function AdminUsersPage() {
     </div>
   );
 }
-

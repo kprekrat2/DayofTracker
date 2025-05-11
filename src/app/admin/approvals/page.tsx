@@ -18,13 +18,12 @@ export default function AdminApprovalsPage() {
 
   useEffect(() => {
     if (!authLoading && (!user || user.role !== 'admin')) {
-      router.push('/'); 
+      router.push('/login'); 
     }
   }, [user, authLoading, router]);
 
   const pendingRequests = useMemo(() => {
     if (dataLoading || !user || user.role !== 'admin') return [];
-    // Ensure getAllRequests returns an array before filtering
     const allRequests = getAllRequests();
     if (!Array.isArray(allRequests)) return [];
     return allRequests.filter((req: DayOffRequest) => req.status === "pending");
@@ -84,4 +83,3 @@ export default function AdminApprovalsPage() {
     </div>
   );
 }
-

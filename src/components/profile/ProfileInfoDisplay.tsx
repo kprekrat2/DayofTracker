@@ -16,15 +16,17 @@ import {
 } from 'date-fns';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { AlertCircle, CalendarCheck, CalendarClock, Info, CalendarX, Gift, MountainSnow } from 'lucide-react'; // Added Gift, MountainSnow
+import { AlertCircle, CalendarCheck, CalendarClock, Info, CalendarX, Gift, MountainSnow } from 'lucide-react'; 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface YearStats {
   year: number;
   allocatedVacation: number;
   allocatedAdditional: number;
-  spentVacation: number;
-  spentAdditional: number;
+  spentVacation: number; // Approved
+  spentAdditional: number; // Approved
+  requestedVacation: number; // Pending + Approved
+  requestedAdditional: number; // Pending + Approved
   remainingVacation: number;
   remainingAdditional: number;
   totalApprovedDays: number;
@@ -59,6 +61,8 @@ export function ProfileInfoDisplay() {
         allocatedAdditional: 0,
         spentVacation: 0,
         spentAdditional: 0,
+        requestedVacation: 0,
+        requestedAdditional: 0,
         remainingVacation: 0,
         remainingAdditional: 0,
         totalApprovedDays: 0,
@@ -68,25 +72,37 @@ export function ProfileInfoDisplay() {
     const yearStart = startOfYear(new Date(year, 0, 1));
     const yearEnd = endOfYear(new Date(year, 11, 31));
 
-    const approvedRequests = requests.filter(
-      (req) => req.userId === user.id && req.status === 'approved'
+    const userRequests = requests.filter(
+      (req) => req.userId === user.id
     );
 
     let spentVacationBusinessDays = 0;
     let spentAdditionalBusinessDays = 0;
+    let requestedVacationBusinessDays = 0;
+    let requestedAdditionalBusinessDays = 0;
 
-    approvedRequests.forEach((req) => {
+    userRequests.forEach((req) => {
       const overlapStart = dateMax([new Date(req.startDate), yearStart]);
       const overlapEnd = dateMin([new Date(req.endDate), yearEnd]);
+
       if (overlapStart <= overlapEnd) {
         const businessDaysInOverlap = countBusinessDays(overlapStart, overlapEnd, holidays);
-        // Default to 'vacation' if requestType is undefined (for older requests)
         const type = req.requestType || "vacation"; 
 
-        if (type === "vacation") {
-          spentVacationBusinessDays += businessDaysInOverlap;
-        } else if (type === "additional") {
-          spentAdditionalBusinessDays += businessDaysInOverlap;
+        if (req.status === "approved") {
+          if (type === "vacation") {
+            spentVacationBusinessDays += businessDaysInOverlap;
+          } else if (type === "additional") {
+            spentAdditionalBusinessDays += businessDaysInOverlap;
+          }
+        }
+
+        if (req.status === "approved" || req.status === "pending") {
+          if (type === "vacation") {
+            requestedVacationBusinessDays += businessDaysInOverlap;
+          } else if (type === "additional") {
+            requestedAdditionalBusinessDays += businessDaysInOverlap;
+          }
         }
       }
     });
@@ -94,18 +110,18 @@ export function ProfileInfoDisplay() {
     const allocatedVacation = user.vacationDays || 0;
     const allocatedAdditional = user.additionalDays || 0;
 
-    const spentVacation = spentVacationBusinessDays;
-    const spentAdditional = spentAdditionalBusinessDays;
-    const totalApprovedDays = spentVacation + spentAdditional; 
+    const totalApprovedDays = spentVacationBusinessDays + spentAdditionalBusinessDays; 
         
     return {
       year,
       allocatedVacation,
       allocatedAdditional,
-      spentVacation,
-      spentAdditional,
-      remainingVacation: Math.max(0, allocatedVacation - spentVacation),
-      remainingAdditional: Math.max(0, allocatedAdditional - spentAdditional),
+      spentVacation: spentVacationBusinessDays,
+      spentAdditional: spentAdditionalBusinessDays,
+      requestedVacation: requestedVacationBusinessDays,
+      requestedAdditional: requestedAdditionalBusinessDays,
+      remainingVacation: Math.max(0, allocatedVacation - spentVacationBusinessDays),
+      remainingAdditional: Math.max(0, allocatedAdditional - spentAdditionalBusinessDays),
       totalApprovedDays,
     };
   }, [user, requests, holidays, dataLoading]);
@@ -161,11 +177,13 @@ export function ProfileInfoDisplay() {
             <StatItem label="Total Approved Days Off" value={currentYearStats.totalApprovedDays} icon={CalendarCheck}/>
             <hr className="my-3"/>
             <StatItem label="Allocated Vacation Days" value={currentYearStats.allocatedVacation} icon={MountainSnow} />
-            <StatItem label="Spent Vacation Days" value={currentYearStats.spentVacation} total={currentYearStats.allocatedVacation} />
+            <StatItem label="Requested Vacation Days (Pending/Approved)" value={currentYearStats.requestedVacation} icon={CalendarClock} />
+            <StatItem label="Spent (Approved) Vacation Days" value={currentYearStats.spentVacation} total={currentYearStats.allocatedVacation} />
             <StatItem label="Remaining Vacation Days" value={currentYearStats.remainingVacation} />
             <hr className="my-3"/>
             <StatItem label="Allocated Additional Days" value={currentYearStats.allocatedAdditional} icon={Gift} isAdditional />
-            <StatItem label="Spent Additional Days" value={currentYearStats.spentAdditional} total={currentYearStats.allocatedAdditional} isAdditional />
+            <StatItem label="Requested Additional Days (Pending/Approved)" value={currentYearStats.requestedAdditional} icon={CalendarClock} isAdditional />
+            <StatItem label="Spent (Approved) Additional Days" value={currentYearStats.spentAdditional} total={currentYearStats.allocatedAdditional} isAdditional />
             <StatItem label="Remaining Additional Days" value={currentYearStats.remainingAdditional} isAdditional />
           </CardContent>
         </Card>
@@ -179,11 +197,13 @@ export function ProfileInfoDisplay() {
             <StatItem label="Total Approved Days Off" value={previousYearStats.totalApprovedDays} icon={CalendarX} isPreviousYear/>
              <hr className="my-3"/>
             <StatItem label="Allocated Vacation Days" value={previousYearStats.allocatedVacation} icon={MountainSnow} isPreviousYear />
-            <StatItem label="Spent Vacation Days" value={previousYearStats.spentVacation} total={previousYearStats.allocatedVacation} isPreviousYear />
+            <StatItem label="Requested Vacation Days (Pending/Approved)" value={previousYearStats.requestedVacation} icon={CalendarClock} isPreviousYear />
+            <StatItem label="Spent (Approved) Vacation Days" value={previousYearStats.spentVacation} total={previousYearStats.allocatedVacation} isPreviousYear />
             <StatItem label="Unused Vacation Days (End of Year)" value={previousYearStats.remainingVacation} isPreviousYear />
             <hr className="my-3"/>
             <StatItem label="Allocated Additional Days" value={previousYearStats.allocatedAdditional} icon={Gift} isAdditional isPreviousYear/>
-            <StatItem label="Spent Additional Days" value={previousYearStats.spentAdditional} total={previousYearStats.allocatedAdditional} isAdditional isPreviousYear />
+            <StatItem label="Requested Additional Days (Pending/Approved)" value={previousYearStats.requestedAdditional} icon={CalendarClock} isAdditional isPreviousYear />
+            <StatItem label="Spent (Approved) Additional Days" value={previousYearStats.spentAdditional} total={previousYearStats.allocatedAdditional} isAdditional isPreviousYear />
             <StatItem label="Unused Additional Days (End of Year)" value={previousYearStats.remainingAdditional} isAdditional isPreviousYear />
           </CardContent>
         </Card>
@@ -200,3 +220,4 @@ export function ProfileInfoDisplay() {
     </div>
   );
 }
+

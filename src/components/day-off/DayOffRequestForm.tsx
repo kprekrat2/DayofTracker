@@ -27,6 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import React, { useTransition } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { countBusinessDays, calculateUserYearStats } from "@/lib/dayoff-utils";
 
 const 이유_최소_길이 = 10;
 const 이유_최대_길이 = 500;
@@ -53,7 +54,7 @@ type DayOffRequestFormValues = z.infer<typeof dayOffRequestFormSchema>;
 
 export function DayOffRequestForm() {
   const { user } = useAuth();
-  const { addRequest } = useData();
+  const { addRequest, holidays, requests: allRequests } = useData(); // Get holidays and allRequests
   const { toast } = useToast();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -72,13 +73,53 @@ export function DayOffRequestForm() {
       return;
     }
 
+    const requestedBusinessDays = countBusinessDays(data.startDate, data.endDate, holidays);
+
+    if (requestedBusinessDays > 0) {
+      const yearOfRequestStart = data.startDate.getFullYear();
+      // Filter requests for the current user to pass to calculateUserYearStats
+      const currentUserRequests = allRequests.filter(r => r.userId === user.id);
+      const statsForYearOfRequestStart = calculateUserYearStats(yearOfRequestStart, user, currentUserRequests, holidays);
+
+      if (data.requestType === "vacation") {
+        if (requestedBusinessDays > statsForYearOfRequestStart.remainingVacation) {
+          toast({
+            title: "Insufficient Vacation Days",
+            description: `You have ${statsForYearOfRequestStart.remainingVacation} vacation day(s) available for ${yearOfRequestStart}, but this request requires ${requestedBusinessDays} business day(s).`,
+            variant: "destructive",
+            duration: 5000,
+          });
+          return;
+        }
+      } else if (data.requestType === "additional") {
+        if (requestedBusinessDays > statsForYearOfRequestStart.remainingAdditional) {
+          toast({
+            title: "Insufficient Additional Days",
+            description: `You have ${statsForYearOfRequestStart.remainingAdditional} additional day(s) available for ${yearOfRequestStart}, but this request requires ${requestedBusinessDays} business day(s).`,
+            variant: "destructive",
+            duration: 5000,
+          });
+          return;
+        }
+      }
+    } else if (data.startDate <= data.endDate) { // if requestedBusinessDays is 0 or less, but dates are valid
+        toast({
+            title: "No working days selected",
+            description: "Your request does not include any working days. No leave will be deducted if approved.",
+            variant: "default",
+            duration: 5000,
+        });
+        // Allow submission for record keeping or if policy allows
+    }
+
+
     startTransition(() => {
       try {
         const newRequest = addRequest({ 
             startDate: data.startDate,
             endDate: data.endDate,
             reason: data.reason,
-            requestType: data.requestType, // Include requestType
+            requestType: data.requestType, 
             userId: user.id 
         });
         toast({
@@ -86,9 +127,9 @@ export function DayOffRequestForm() {
           description: `Your day-off request from ${format(data.startDate, "PPP")} to ${format(data.endDate, "PPP")} has been submitted.`,
         });
         form.reset();
-        router.push("/"); // Redirect to the list of requests
+        router.push("/"); 
       } catch (error) {
-        toast({ title: "Submission Failed", description: "Could not submit your request. Please try again.", variant: "destructive"});
+        toast({ title: "Submission Failed", description: (error as Error)?.message || "Could not submit your request. Please try again.", variant: "destructive"});
       }
     });
   }
@@ -133,7 +174,7 @@ export function DayOffRequestForm() {
                           mode="single"
                           selected={field.value}
                           onSelect={field.onChange}
-                          disabled={(date) => date < new Date(new Date().setHours(0,0,0,0)) } // Disable past dates
+                          disabled={(date) => date < new Date(new Date().setHours(0,0,0,0)) } 
                           initialFocus
                         />
                       </PopoverContent>

@@ -1,50 +1,17 @@
 
 "use client";
 
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useData } from '@/hooks/useData';
-import type { DayOffRequest, Holiday } from '@/types';
-import {
-  eachDayOfInterval,
-  endOfYear,
-  format,
-  isWeekend,
-  max as dateMax,
-  min as dateMin,
-  startOfYear,
-} from 'date-fns';
+import type { DayOffRequest, Holiday, User, YearStats } from '@/types'; // Import YearStats
+import { calculateUserYearStats } from '@/lib/dayoff-utils'; // Import the new utility function
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { AlertCircle, CalendarCheck, CalendarClock, Info, CalendarX, Gift, MountainSnow } from 'lucide-react'; 
+import { AlertCircle, CalendarCheck, CalendarClock, Info, CalendarX, Gift, MountainSnow } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Skeleton } from '../ui/skeleton';
 
-interface YearStats {
-  year: number;
-  allocatedVacation: number;
-  allocatedAdditional: number;
-  spentVacation: number; // Approved
-  spentAdditional: number; // Approved
-  requestedVacation: number; // Pending + Approved
-  requestedAdditional: number; // Pending + Approved
-  remainingVacation: number;
-  remainingAdditional: number;
-  totalApprovedDays: number;
-}
-
-function countBusinessDays(startDate: Date, endDate: Date, holidays: Holiday[]): number {
-  if (startDate > endDate) return 0;
-  let count = 0;
-  const holidayDates = holidays.map(h => format(h.date, 'yyyy-MM-dd'));
-  const interval = eachDayOfInterval({ start: startDate, end: endDate });
-
-  for (const day of interval) {
-    if (!isWeekend(day) && !holidayDates.includes(format(day, 'yyyy-MM-dd'))) {
-      count++;
-    }
-  }
-  return count;
-}
 
 export function ProfileInfoDisplay() {
   const { user } = useAuth();
@@ -53,84 +20,49 @@ export function ProfileInfoDisplay() {
   const currentYear = useMemo(() => new Date().getFullYear(), []);
   const previousYear = useMemo(() => currentYear - 1, [currentYear]);
 
-  const calculateYearStats = useCallback((year: number): YearStats => {
+  const currentYearStats = useMemo(() => {
     if (!user || dataLoading) {
-      return {
-        year,
-        allocatedVacation: 0,
-        allocatedAdditional: 0,
-        spentVacation: 0,
-        spentAdditional: 0,
-        requestedVacation: 0,
-        requestedAdditional: 0,
-        remainingVacation: 0,
-        remainingAdditional: 0,
-        totalApprovedDays: 0,
-      };
+      // Return a skeleton or default YearStats structure
+      return { year: currentYear, allocatedVacation: 0, allocatedAdditional: 0, spentVacation: 0, spentAdditional: 0, requestedVacation: 0, requestedAdditional: 0, remainingVacation: 0, remainingAdditional: 0, totalApprovedDays: 0 };
     }
+    const userRequests = requests.filter(req => req.userId === user.id);
+    return calculateUserYearStats(currentYear, user, userRequests, holidays);
+  }, [currentYear, user, requests, holidays, dataLoading]);
 
-    const yearStart = startOfYear(new Date(year, 0, 1));
-    const yearEnd = endOfYear(new Date(year, 11, 31));
+  const previousYearStats = useMemo(() => {
+    if (!user || dataLoading) {
+      // Return a skeleton or default YearStats structure
+      return { year: previousYear, allocatedVacation: 0, allocatedAdditional: 0, spentVacation: 0, spentAdditional: 0, requestedVacation: 0, requestedAdditional: 0, remainingVacation: 0, remainingAdditional: 0, totalApprovedDays: 0 };
+    }
+    const userRequests = requests.filter(req => req.userId === user.id);
+    return calculateUserYearStats(previousYear, user, userRequests, holidays);
+  }, [previousYear, user, requests, holidays, dataLoading]);
 
-    const userRequests = requests.filter(
-      (req) => req.userId === user.id
-    );
-
-    let spentVacationBusinessDays = 0;
-    let spentAdditionalBusinessDays = 0;
-    let requestedVacationBusinessDays = 0;
-    let requestedAdditionalBusinessDays = 0;
-
-    userRequests.forEach((req) => {
-      const overlapStart = dateMax([new Date(req.startDate), yearStart]);
-      const overlapEnd = dateMin([new Date(req.endDate), yearEnd]);
-
-      if (overlapStart <= overlapEnd) {
-        const businessDaysInOverlap = countBusinessDays(overlapStart, overlapEnd, holidays);
-        const type = req.requestType || "vacation"; 
-
-        if (req.status === "approved") {
-          if (type === "vacation") {
-            spentVacationBusinessDays += businessDaysInOverlap;
-          } else if (type === "additional") {
-            spentAdditionalBusinessDays += businessDaysInOverlap;
-          }
-        }
-
-        if (req.status === "approved" || req.status === "pending") {
-          if (type === "vacation") {
-            requestedVacationBusinessDays += businessDaysInOverlap;
-          } else if (type === "additional") {
-            requestedAdditionalBusinessDays += businessDaysInOverlap;
-          }
-        }
-      }
-    });
-    
-    const allocatedVacation = user.vacationDays || 0;
-    const allocatedAdditional = user.additionalDays || 0;
-
-    const totalApprovedDays = spentVacationBusinessDays + spentAdditionalBusinessDays; 
-        
-    return {
-      year,
-      allocatedVacation,
-      allocatedAdditional,
-      spentVacation: spentVacationBusinessDays,
-      spentAdditional: spentAdditionalBusinessDays,
-      requestedVacation: requestedVacationBusinessDays,
-      requestedAdditional: requestedAdditionalBusinessDays,
-      remainingVacation: Math.max(0, allocatedVacation - spentVacationBusinessDays),
-      remainingAdditional: Math.max(0, allocatedAdditional - spentAdditionalBusinessDays),
-      totalApprovedDays,
-    };
-  }, [user, requests, holidays, dataLoading]);
-
-  const currentYearStats = useMemo(() => calculateYearStats(currentYear), [calculateYearStats, currentYear]);
-  const previousYearStats = useMemo(() => calculateYearStats(previousYear), [calculateYearStats, previousYear]);
 
   if (dataLoading || !user) {
-    return <p>Loading user data...</p>; // Or a more elaborate skeleton
+     return (
+      <div className="space-y-8">
+        <div className="grid md:grid-cols-2 gap-6">
+          {[...Array(2)].map((_, i) => (
+            <Card key={i} className="shadow-lg rounded-lg">
+              <CardHeader>
+                <Skeleton className="h-7 w-3/5 mb-1" />
+                <Skeleton className="h-4 w-4/5" />
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Skeleton className="h-5 w-full" />
+                <Skeleton className="h-2 w-full mb-2" />
+                <Skeleton className="h-5 w-full" />
+                <Skeleton className="h-2 w-full mb-2" />
+                <Skeleton className="h-5 w-full" />
+                <Skeleton className="h-2 w-full mb-2" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <Skeleton className="h-20 w-full" />
+      </div>
+    );
   }
 
   const StatItem: React.FC<{ label: string; value: number; total?: number; icon?: React.ElementType; isPreviousYear?: boolean; isAdditional?: boolean }> = ({ label, value, total, icon: Icon, isPreviousYear = false, isAdditional = false }) => {
@@ -220,4 +152,3 @@ export function ProfileInfoDisplay() {
     </div>
   );
 }
-

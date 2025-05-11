@@ -30,3 +30,16 @@ export interface Holiday {
   name: string;
   date: Date;
 }
+
+export interface YearStats {
+  year: number;
+  allocatedVacation: number;
+  allocatedAdditional: number;
+  spentVacation: number; // Approved
+  spentAdditional: number; // Approved
+  requestedVacation: number; // Pending + Approved
+  requestedAdditional: number; // Pending + Approved
+  remainingVacation: number;
+  remainingAdditional: number;
+  totalApprovedDays: number;
+}

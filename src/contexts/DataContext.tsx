@@ -13,6 +13,8 @@ interface DataContextType {
   getRequestsByUserId: (userId: string) => DayOffRequest[];
   getAllRequests: () => DayOffRequest[];
   users: User[]; // Expose users for admin view
+  addHoliday: (holiday: Omit<Holiday, "id">) => Holiday;
+  deleteHoliday: (holidayId: string) => void;
 }
 
 export const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -159,8 +161,33 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       .sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime());
   }, [requests, usersById]);
 
+  const addHoliday = useCallback((holidayData: Omit<Holiday, "id">) => {
+    const newHoliday: Holiday = {
+      ...holidayData,
+      id: `holiday_${Date.now()}`,
+    };
+    setHolidays((prevHolidays) => [...prevHolidays, newHoliday].sort((a,b) => a.date.getTime() - b.date.getTime()));
+    return newHoliday;
+  }, []);
+
+  const deleteHoliday = useCallback((holidayId: string) => {
+    setHolidays((prevHolidays) => prevHolidays.filter(h => h.id !== holidayId));
+  }, []);
+
+
   return (
-    <DataContext.Provider value={{ requests, holidays, isLoading, addRequest, updateRequestStatus, getRequestsByUserId, getAllRequests, users: ALL_MOCK_USERS }}>
+    <DataContext.Provider value={{ 
+      requests, 
+      holidays, 
+      isLoading, 
+      addRequest, 
+      updateRequestStatus, 
+      getRequestsByUserId, 
+      getAllRequests, 
+      users: ALL_MOCK_USERS,
+      addHoliday,
+      deleteHoliday,
+    }}>
       {children}
     </DataContext.Provider>
   );

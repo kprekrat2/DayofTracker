@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, PlusSquare, CalendarDays, ClipboardCheck } from "lucide-react";
+import { Home, PlusSquare, CalendarDays, ClipboardCheck, VenetianMask } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,6 +16,7 @@ const baseNavItems = [
 
 const adminNavItems = [
   { href: "/admin/approvals", label: "Manage Approvals", icon: ClipboardCheck, adminOnly: true },
+  { href: "/admin/holidays", label: "Manage Holidays", icon: VenetianMask, adminOnly: true },
 ];
 
 export function NavMenu({ orientation = "vertical" }: { orientation?: "vertical" | "horizontal" }) {
@@ -50,4 +51,3 @@ export function NavMenu({ orientation = "vertical" }: { orientation?: "vertical"
     </nav>
   );
 }
-

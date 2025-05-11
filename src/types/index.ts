@@ -5,6 +5,8 @@ export interface User {
   email: string;
   role: "admin" | "user";
   password?: string; // Password is optional as it's sensitive and might not always be fetched/present
+  vacationDays?: number; // Total vacation days
+  additionalDays?: number; // Additional days off (e.g., blood donation)
 }
 
 export type DayOffStatus = "pending" | "approved" | "rejected" | "cancelled";
@@ -27,3 +29,4 @@ export interface Holiday {
   name: string;
   date: Date;
 }
+

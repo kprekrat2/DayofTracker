@@ -13,7 +13,7 @@ interface DataContextType {
   getRequestsByUserId: (userId: string) => DayOffRequest[];
   getAllRequests: () => DayOffRequest[];
   users: User[];
-  addUser: (userData: Omit<User, "id"> & { password?: string }) => User;
+  addUser: (userData: Omit<User, "id" | "vacationDays" | "additionalDays"> & { password?: string; vacationDays: number; additionalDays: number; }) => User;
   updateUser: (userId: string, userData: Partial<Omit<User, "id"> & { password?: string }>) => void;
   deleteUser: (userId: string) => void;
   addHoliday: (holiday: Omit<Holiday, "id">) => Holiday;
@@ -29,6 +29,8 @@ const MOCK_REGULAR_USER: User = {
   email: "user@example.com", // Changed for clarity
   role: "user",
   password: "password123",
+  vacationDays: 20,
+  additionalDays: 2,
 };
 
 const MOCK_ADMIN_USER: User = { 
@@ -37,6 +39,8 @@ const MOCK_ADMIN_USER: User = {
   email: "admin@example.com",
   role: "admin",
   password: "adminpassword",
+  vacationDays: 25,
+  additionalDays: 5,
 };
 
 const MOCK_USER_TWO: User = {
@@ -45,6 +49,8 @@ const MOCK_USER_TWO: User = {
   email: "jane@example.com", // Changed for clarity
   role: "user",
   password: "janepassword",
+  vacationDays: 15,
+  additionalDays: 0,
 };
 
 const INITIAL_USERS = [MOCK_REGULAR_USER, MOCK_ADMIN_USER, MOCK_USER_TWO];
@@ -181,12 +187,14 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     setHolidays((prevHolidays) => prevHolidays.filter(h => h.id !== holidayId));
   }, []);
 
-  const addUser = useCallback((userData: Omit<User, "id"> & { password?: string }) => {
+ const addUser = useCallback((userData: Omit<User, "id" | "vacationDays" | "additionalDays"> & { password?: string; vacationDays: number; additionalDays: number; }) => {
     // In a real app, hash the password here before saving
     const newUser: User = {
       ...userData,
       id: `user_${Date.now()}`,
       password: userData.password || "defaultpassword", // Store password (plain text for demo)
+      vacationDays: userData.vacationDays,
+      additionalDays: userData.additionalDays,
     };
     setUsers((prevUsers) => [...prevUsers, newUser]);
     return newUser;
@@ -200,16 +208,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           // Only update password if a new one is provided and it's not an empty string
           if (userData.password && userData.password.length > 0) {
             updatedUser.password = userData.password; // Store new password (plain text for demo)
-          } else if (userData.password === '') { // If password field was explicitly cleared but not intended to change
+          } else if (userData.password === '') { 
+            // If password field was explicitly cleared but not intended to change
             // keep old password by not setting updatedUser.password from userData.password
-            // This case ensures if password field is optional and cleared, it doesn't erase existing one
-            // However, our edit form logic will ensure 'password' is either a valid new password or undefined (if not changing)
-          } else if (userData.hasOwnProperty('password') && !userData.password) {
-             // If password was intentionally set to undefined/null (e.g. from a form field that was cleared)
-             // and you want to keep the old password, do nothing with user.password.
-             // If you want to clear it (not recommended), set updatedUser.password = undefined or handle as error.
-             // For this demo, if userData.password is present but falsy (empty string), we effectively don't change it unless explicit.
-             // The form logic should ensure userData.password is either a valid new password or undefined.
           }
           // If userData.password is not provided, user.password remains unchanged.
           return updatedUser;
@@ -244,3 +245,4 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     </DataContext.Provider>
   );
 };
+

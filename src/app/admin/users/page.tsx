@@ -18,7 +18,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { PlusCircle, Trash2, Edit3, Users, ShieldAlert, UserPlus, Search, KeyRound } from "lucide-react";
+import { PlusCircle, Trash2, Edit3, Users, ShieldAlert, UserPlus, Search, KeyRound, CalendarDays, Gift } from "lucide-react";
 import type { User } from "@/types";
 
 const addUserFormSchema = z.object({
@@ -27,6 +27,8 @@ const addUserFormSchema = z.object({
   role: z.enum(["admin", "user"], { required_error: "Role is required." }),
   password: z.string().min(6, { message: "Password must be at least 6 characters." }),
   confirmPassword: z.string().min(6, { message: "Please confirm password." }),
+  vacationDays: z.coerce.number().int({ message: "Must be a whole number." }).min(0, { message: "Vacation days cannot be negative." }).default(0),
+  additionalDays: z.coerce.number().int({ message: "Must be a whole number." }).min(0, { message: "Additional days cannot be negative." }).default(0),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords do not match.",
   path: ["confirmPassword"],
@@ -38,6 +40,8 @@ const editUserFormSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }).max(50, { message: "Name must not exceed 50 characters."}),
   email: z.string().email({ message: "Invalid email address." }),
   role: z.enum(["admin", "user"], { required_error: "Role is required." }),
+  vacationDays: z.coerce.number().int({ message: "Must be a whole number." }).min(0, { message: "Vacation days cannot be negative." }),
+  additionalDays: z.coerce.number().int({ message: "Must be a whole number." }).min(0, { message: "Additional days cannot be negative." }),
   password: z.string().min(6, { message: "New password must be at least 6 characters." }).optional().or(z.literal('')), // Optional, can be empty string if not changing
   confirmPassword: z.string().optional().or(z.literal('')),
 }).refine(data => {
@@ -75,7 +79,7 @@ export default function AdminUsersPage() {
 
   const addUserForm = useForm<AddUserFormValues>({
     resolver: zodResolver(addUserFormSchema),
-    defaultValues: { name: "", email: "", role: "user", password: "", confirmPassword: "" },
+    defaultValues: { name: "", email: "", role: "user", password: "", confirmPassword: "", vacationDays: 0, additionalDays: 0 },
   });
 
   const editUserForm = useForm<EditUserFormValues>({
@@ -94,6 +98,8 @@ export default function AdminUsersPage() {
         name: selectedUser.name,
         email: selectedUser.email,
         role: selectedUser.role,
+        vacationDays: selectedUser.vacationDays ?? 0,
+        additionalDays: selectedUser.additionalDays ?? 0,
         password: "", // Don't prefill password
         confirmPassword: "",
       });
@@ -103,7 +109,14 @@ export default function AdminUsersPage() {
   const handleAddUser = (data: AddUserFormValues) => {
     startTransition(() => {
       try {
-        addUser({ name: data.name, email: data.email, role: data.role, password: data.password });
+        addUser({ 
+            name: data.name, 
+            email: data.email, 
+            role: data.role, 
+            password: data.password,
+            vacationDays: data.vacationDays,
+            additionalDays: data.additionalDays 
+        });
         toast({ title: "User Added", description: `${data.name} has been successfully added.` });
         setIsAddUserDialogOpen(false);
         addUserForm.reset();
@@ -121,6 +134,8 @@ export default function AdminUsersPage() {
           name: data.name,
           email: data.email,
           role: data.role,
+          vacationDays: data.vacationDays,
+          additionalDays: data.additionalDays,
         };
         if (data.password && data.password.length > 0) {
           updatePayload.password = data.password;
@@ -197,7 +212,7 @@ export default function AdminUsersPage() {
             <Users className="h-7 w-7 text-primary" /> Manage Users
           </CardTitle>
           <CardDescription>
-            Add, edit, or remove user accounts and manage their roles and credentials.
+            Add, edit, or remove user accounts and manage their roles, credentials, and day-off entitlements.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -235,6 +250,20 @@ export default function AdminUsersPage() {
                       <FormItem>
                         <FormLabel>Email Address</FormLabel>
                         <FormControl><Input type="email" placeholder="user@example.com" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                     <FormField control={addUserForm.control} name="vacationDays" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-1"><CalendarDays size={14}/>Vacation Days</FormLabel>
+                        <FormControl><Input type="number" min="0" placeholder="e.g., 20" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={addUserForm.control} name="additionalDays" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-1"><Gift size={14}/>Additional Days</FormLabel>
+                        <FormControl><Input type="number" min="0" placeholder="e.g., 2" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
@@ -282,13 +311,15 @@ export default function AdminUsersPage() {
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Role</TableHead>
+                  <TableHead className="text-center">Vacation Days</TableHead>
+                  <TableHead className="text-center">Additional Days</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredUsers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="h-24 text-center">
+                    <TableCell colSpan={6} className="h-24 text-center">
                       No users found.
                     </TableCell>
                   </TableRow>
@@ -298,6 +329,8 @@ export default function AdminUsersPage() {
                       <TableCell className="font-medium">{user.name}</TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell className="capitalize">{user.role}</TableCell>
+                      <TableCell className="text-center">{user.vacationDays ?? 0}</TableCell>
+                      <TableCell className="text-center">{user.additionalDays ?? 0}</TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button variant="ghost" size="icon" onClick={() => openEditDialog(user)} disabled={isPending} aria-label={`Edit ${user.name}`}>
                           <Edit3 className="h-4 w-4" />
@@ -320,7 +353,7 @@ export default function AdminUsersPage() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Edit User: {selectedUser?.name}</DialogTitle>
-            <DialogDescription>Update the user's details, role, or password.</DialogDescription>
+            <DialogDescription>Update the user's details, role, entitlements, or password.</DialogDescription>
           </DialogHeader>
           <Form {...editUserForm}>
             <form onSubmit={editUserForm.handleSubmit(handleEditUser)} className="space-y-4 py-4">
@@ -329,6 +362,20 @@ export default function AdminUsersPage() {
               )} />
               <FormField control={editUserForm.control} name="email" render={({ field }) => (
                 <FormItem><FormLabel>Email Address</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+               <FormField control={editUserForm.control} name="vacationDays" render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-1"><CalendarDays size={14}/>Vacation Days</FormLabel>
+                  <FormControl><Input type="number" min="0" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={editUserForm.control} name="additionalDays" render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-1"><Gift size={14}/>Additional Days</FormLabel>
+                  <FormControl><Input type="number" min="0" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
               )} />
               <FormField control={editUserForm.control} name="role" render={({ field }) => (
                 <FormItem>
@@ -393,3 +440,4 @@ export default function AdminUsersPage() {
     </div>
   );
 }
+

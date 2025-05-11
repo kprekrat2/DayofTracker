@@ -12,7 +12,10 @@ interface DataContextType {
   updateRequestStatus: (requestId: string, status: DayOffStatus) => void;
   getRequestsByUserId: (userId: string) => DayOffRequest[];
   getAllRequests: () => DayOffRequest[];
-  users: User[]; // Expose users for admin view
+  users: User[];
+  addUser: (userData: Omit<User, "id">) => User;
+  updateUser: (userId: string, userData: Partial<Omit<User, "id">>) => void;
+  deleteUser: (userId: string) => void;
   addHoliday: (holiday: Omit<Holiday, "id">) => Holiday;
   deleteHoliday: (holidayId: string) => void;
 }
@@ -27,7 +30,7 @@ const MOCK_REGULAR_USER: User = {
   role: "user",
 };
 
-const MOCK_ADMIN_USER: User = { // This user is defined in AuthContext, but we need a list of all users
+const MOCK_ADMIN_USER: User = { 
   id: "admin_007",
   name: "Admin Manager",
   email: "admin@example.com",
@@ -41,20 +44,21 @@ const MOCK_USER_TWO: User = {
   role: "user",
 };
 
-const ALL_MOCK_USERS = [MOCK_REGULAR_USER, MOCK_ADMIN_USER, MOCK_USER_TWO];
+const INITIAL_USERS = [MOCK_REGULAR_USER, MOCK_ADMIN_USER, MOCK_USER_TWO];
 
 
 export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [requests, setRequests] = useState<DayOffRequest[]>([]);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [users, setUsers] = useState<User[]>(INITIAL_USERS);
   const [isLoading, setIsLoading] = useState(true);
 
   const usersById = useMemo(() => {
-    return ALL_MOCK_USERS.reduce((acc, user) => {
+    return users.reduce((acc, user) => {
       acc[user.id] = user;
       return acc;
     }, {} as Record<string, User>);
-  }, []);
+  }, [users]);
 
   useEffect(() => {
     const currentYear = new Date().getFullYear();
@@ -174,17 +178,43 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     setHolidays((prevHolidays) => prevHolidays.filter(h => h.id !== holidayId));
   }, []);
 
+  const addUser = useCallback((userData: Omit<User, "id">) => {
+    const newUser: User = {
+      ...userData,
+      id: `user_${Date.now()}`,
+    };
+    setUsers((prevUsers) => [...prevUsers, newUser]);
+    return newUser;
+  }, []);
+
+  const updateUser = useCallback((userId: string, userData: Partial<Omit<User, "id">>) => {
+    setUsers((prevUsers) =>
+      prevUsers.map((user) =>
+        user.id === userId ? { ...user, ...userData } : user
+      )
+    );
+  }, []);
+
+  const deleteUser = useCallback((userId: string) => {
+    setUsers((prevUsers) => prevUsers.filter(u => u.id !== userId));
+    // Optionally, handle cascading deletes or reassignments for requests linked to this user
+    // For simplicity, we are not handling it here.
+  }, []);
+
 
   return (
     <DataContext.Provider value={{ 
       requests, 
       holidays, 
+      users,
       isLoading, 
       addRequest, 
       updateRequestStatus, 
       getRequestsByUserId, 
       getAllRequests, 
-      users: ALL_MOCK_USERS,
+      addUser,
+      updateUser,
+      deleteUser,
       addHoliday,
       deleteHoliday,
     }}>

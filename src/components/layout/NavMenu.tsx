@@ -39,7 +39,7 @@ export function NavMenu({ orientation = "vertical" }: { orientation?: "vertical"
           key={item.href}
           asChild
           variant={pathname === item.href ? "secondary" : "ghost"}
-          className="justify-start"
+          className={cn("justify-start", orientation === "vertical" ? "w-full" : "")}
         >
           <Link href={item.href} className="flex items-center gap-2">
             <item.icon className="h-5 w-5" />
@@ -50,3 +50,4 @@ export function NavMenu({ orientation = "vertical" }: { orientation?: "vertical"
     </nav>
   );
 }
+

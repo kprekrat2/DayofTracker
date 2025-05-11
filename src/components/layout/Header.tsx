@@ -85,10 +85,8 @@ export function Header() {
                     <span className="sr-only">Toggle Menu</span>
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="w-[300px] sm:w-[400px]">
-                  <div className="p-4">
-                    <NavMenu orientation="vertical" />
-                  </div>
+                <SheetContent side="left" className="w-[260px] sm:w-[300px] p-0 pt-4">
+                  <NavMenu orientation="vertical" />
                 </SheetContent>
               </Sheet>
             </div>
@@ -98,3 +96,4 @@ export function Header() {
     </header>
   );
 }
+

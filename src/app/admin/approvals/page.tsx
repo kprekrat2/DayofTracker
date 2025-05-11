@@ -24,14 +24,17 @@ export default function AdminApprovalsPage() {
 
   const pendingRequests = useMemo(() => {
     if (dataLoading || !user || user.role !== 'admin') return [];
-    return getAllRequests().filter((req: DayOffRequest) => req.status === "pending");
+    // Ensure getAllRequests returns an array before filtering
+    const allRequests = getAllRequests();
+    if (!Array.isArray(allRequests)) return [];
+    return allRequests.filter((req: DayOffRequest) => req.status === "pending");
   }, [getAllRequests, dataLoading, user]);
 
 
   if (authLoading || dataLoading || !user || user.role !== 'admin') {
     return (
       <div className="space-y-8">
-        <Card>
+        <Card className="shadow-xl rounded-lg">
           <CardHeader>
             <Skeleton className="h-8 w-3/4" />
             <Skeleton className="h-4 w-1/2" />
@@ -48,7 +51,7 @@ export default function AdminApprovalsPage() {
 
   return (
     <div className="space-y-8">
-      <Card className="shadow-xl">
+      <Card className="shadow-xl rounded-lg">
         <CardHeader>
           <CardTitle className="text-2xl">Manage Day-Off Approvals</CardTitle>
           <CardDescription>
@@ -81,3 +84,4 @@ export default function AdminApprovalsPage() {
     </div>
   );
 }
+
